@@ -23,8 +23,8 @@ type Cook interface {
 	Block() *BlockStatement
 	AddFunction(fn *Function)
 	AddTarget(base *Base, name string) (*Target, error)
-	Execute(pargs map[string]interface{}) error
-	ExecuteWithTarget(pargs map[string]interface{}, names ...string) error
+	Execute(pargs map[string]any) error
+	ExecuteWithTarget(pargs map[string]any, names ...string) error
 	Scope() Scope
 }
 
@@ -90,14 +90,14 @@ func (c *cook) AddTarget(base *Base, name string) (*Target, error) {
 
 func (c *cook) AddFunction(fn *Function) { c.fns[fn.Name] = fn }
 
-func (c *cook) Execute(pargs map[string]interface{}) error {
+func (c *cook) Execute(pargs map[string]any) error {
 	if c.targetAll == nil {
 		return errors.New("default target all is not defined")
 	}
 	return c.ExecuteWithTarget(pargs, TargetAll)
 }
 
-func (c *cook) ExecuteWithTarget(pargs map[string]interface{}, names ...string) (err error) {
+func (c *cook) ExecuteWithTarget(pargs map[string]any, names ...string) (err error) {
 	c.ctx = c.renewContext()
 	for name, v := range pargs {
 		c.ctx.scope.SetVariable(name, v, reflect.ValueOf(v).Kind(), nil)
@@ -219,7 +219,7 @@ func (t *Target) Vist(cb CodeBuilder) {
 }
 
 // a callback function to provide caller to set value for each argument of the function
-type argumentSetter func(int) (interface{}, reflect.Kind, error)
+type argumentSetter func(int) (any, reflect.Kind, error)
 
 type Function struct {
 	Insts  *BlockStatement
@@ -229,13 +229,13 @@ type Function struct {
 	Args   []*Ident
 }
 
-func (fn *Function) Execute(ctx Context, pargs []Node) (v interface{}, kind reflect.Kind, err error) {
-	return fn.internalExecute(ctx, len(pargs), func(i int) (interface{}, reflect.Kind, error) {
+func (fn *Function) Execute(ctx Context, pargs []Node) (v any, kind reflect.Kind, err error) {
+	return fn.internalExecute(ctx, len(pargs), func(i int) (any, reflect.Kind, error) {
 		return pargs[i].Evaluate(ctx)
 	})
 }
 
-func (fn *Function) internalExecute(ctx Context, numArgs int, farg argumentSetter) (v interface{}, kind reflect.Kind, err error) {
+func (fn *Function) internalExecute(ctx Context, numArgs int, farg argumentSetter) (v any, kind reflect.Kind, err error) {
 	switch {
 	case numArgs > len(fn.Args):
 		return nil, 0, fmt.Errorf("too many argument defined %d, given %d", len(fn.Args), numArgs)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -86,8 +85,7 @@ func ensureCompressBinary() {
 	// run external compress on goroutine and let normal test run right away.
 	// any error occurred then the build be can cell
 	wait := &sync.WaitGroup{}
-	wait.Add(1)
-	go func() {
+	wait.Go(func() {
 		defer wait.Done()
 		once.Do(func() {
 			cmd := exec.Command("upx", "--brute", "-o", executableName(cookCompressExe), executableName(cookRawExec))
@@ -100,7 +98,7 @@ func ensureCompressBinary() {
 				os.Exit(1)
 			}
 		})
-	}()
+	})
 	wait.Wait()
 }
 
@@ -194,7 +192,7 @@ func getTestServer() *httptest.Server {
 		case http.MethodPut:
 			// don't reflect body but add it to header assuming test out have little body data
 			defer r.Body.Close()
-			b, err := ioutil.ReadAll(r.Body)
+			b, err := io.ReadAll(r.Body)
 			if err != nil {
 				panic(err)
 			}
@@ -267,14 +265,14 @@ func addUrl(server *httptest.Server) func([]string) []string {
 }
 
 func TestUBHttp(t *testing.T) {
-	require.NoError(t, ioutil.WriteFile(dataFile, []byte(dataSample), 0700))
+	require.NoError(t, os.WriteFile(dataFile, []byte(dataSample), 0700))
 	defer os.Remove(dataFile)
 	testWithCase(t, "TestHttp", cookRawExec, "uncompress binary", testHttpCases, addUrl(getTestServer()))
 }
 
 func TestCBHttp(t *testing.T) {
 	ensureCompressBinary()
-	require.NoError(t, ioutil.WriteFile(dataFile, []byte(dataSample), 0700))
+	require.NoError(t, os.WriteFile(dataFile, []byte(dataSample), 0700))
 	defer os.Remove(dataFile)
 	testWithCase(t, "TestHttp", cookCompressExe, "compressed binary", testHttpCases, addUrl(getTestServer()))
 }
@@ -382,16 +380,16 @@ It was popularised in the 1960s with the release of Letraset sheets containing L
 and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.`
 
 func TestUBString(t *testing.T) {
-	require.NoError(t, ioutil.WriteFile(sreplaceFile1, []byte(sreplaceOriginal), 0700))
-	require.NoError(t, ioutil.WriteFile(sreplaceFile2, []byte(sreplaceOriginal), 0700))
+	require.NoError(t, os.WriteFile(sreplaceFile1, []byte(sreplaceOriginal), 0700))
+	require.NoError(t, os.WriteFile(sreplaceFile2, []byte(sreplaceOriginal), 0700))
 	defer os.Remove(sreplaceFile2)
 	testWithCase(t, "TestStrings", cookRawExec, "uncompress binary", testStringCases, nil)
 }
 
 func TestCBString(t *testing.T) {
 	ensureCompressBinary()
-	require.NoError(t, ioutil.WriteFile(sreplaceFile1, []byte(sreplaceOriginal), 0700))
-	require.NoError(t, ioutil.WriteFile(sreplaceFile2, []byte(sreplaceOriginal), 0700))
+	require.NoError(t, os.WriteFile(sreplaceFile1, []byte(sreplaceOriginal), 0700))
+	require.NoError(t, os.WriteFile(sreplaceFile2, []byte(sreplaceOriginal), 0700))
 	defer os.Remove(sreplaceFile2)
 	testWithCase(t, "TestStrings", cookCompressExe, "compressed binary", testStringCases, nil)
 }
@@ -486,7 +484,7 @@ func testWithCase(t *testing.T, testName, xname, exeType string, cases []*testIn
 		}
 		require.NoError(t, err)
 		if tc.file != "" {
-			buf, err = ioutil.ReadFile(tc.file)
+			buf, err = os.ReadFile(tc.file)
 			os.Remove(tc.file)
 			require.NoError(t, err)
 		}
@@ -534,7 +532,7 @@ func populateFDSample(t *testing.T) {
 	require.NoError(t, os.MkdirAll(pdir1, 0700))
 	require.NoError(t, os.MkdirAll(pdir2, 0700))
 	for i, content := range fileContents {
-		require.NoError(t, ioutil.WriteFile(fileSet1[i], []byte(content), 0700))
+		require.NoError(t, os.WriteFile(fileSet1[i], []byte(content), 0700))
 		if runtime.GOOS == "windows" {
 			function.Chmod(fileSet1[i], "0700")
 		}

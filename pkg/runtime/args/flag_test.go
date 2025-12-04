@@ -10,17 +10,17 @@ import (
 )
 
 type OptionsTest struct {
-	Flaga      string                        `flag:"flaga"`
-	IsMentionA bool                          `mention:"flaga"`
-	Flagb      bool                          `flag:"flagb"`
-	Flagc      int64                         `flag:"flagc"`
-	Flagd      float64                       `flag:"flagd"`
-	Flage      []int64                       `flag:"flage"`
-	Flagf      []interface{}                 `flag:"flagf"`
-	Flagg      map[string]interface{}        `flag:"flagg"`
-	Header     http.Header                   `flag:"header"`
-	Mslice     map[interface{}][]interface{} `flag:"mslice"`
-	Args       []interface{}
+	Flaga      string         `flag:"flaga"`
+	IsMentionA bool           `mention:"flaga"`
+	Flagb      bool           `flag:"flagb"`
+	Flagc      int64          `flag:"flagc"`
+	Flagd      float64        `flag:"flagd"`
+	Flage      []int64        `flag:"flage"`
+	Flagf      []any          `flag:"flagf"`
+	Flagg      map[string]any `flag:"flagg"`
+	Header     http.Header    `flag:"header"`
+	Mslice     map[any][]any  `flag:"mslice"`
+	Args       []any
 }
 
 const dummyDescription = `Lorem Ipsum is simply dummy text of the printing and typesetting industry.
@@ -44,7 +44,7 @@ var testFlags = &Flags{
 
 type argsCase struct {
 	input   []string
-	opts    interface{}
+	opts    any
 	failure bool
 	err     error
 }
@@ -72,7 +72,7 @@ var testCases = []*argsCase{
 			Flagb:      true,
 			Flaga:      "text",
 			IsMentionA: true,
-			Args:       []interface{}{"non-flag-or-options"},
+			Args:       []any{"non-flag-or-options"},
 		},
 	},
 	{
@@ -80,7 +80,7 @@ var testCases = []*argsCase{
 		opts: &OptionsTest{
 			Flaga:      "text",
 			IsMentionA: true,
-			Args:       []interface{}{"non-flag-or-options"},
+			Args:       []any{"non-flag-or-options"},
 		},
 	},
 	{
@@ -89,7 +89,7 @@ var testCases = []*argsCase{
 			Flaga:      "text",
 			IsMentionA: true,
 			Flagc:      int64(873),
-			Args:       []interface{}{"non-flag-or-options"},
+			Args:       []any{"non-flag-or-options"},
 		},
 	},
 	{
@@ -98,7 +98,7 @@ var testCases = []*argsCase{
 			Flaga:      "text of text",
 			IsMentionA: true,
 			Flagc:      int64(873),
-			Args:       []interface{}{"non-flag-or-options"},
+			Args:       []any{"non-flag-or-options"},
 		},
 	},
 	{
@@ -106,21 +106,21 @@ var testCases = []*argsCase{
 		opts: &OptionsTest{
 			Flagd: 1.2,
 			Flage: []int64{22, 42},
-			Args:  []interface{}{"non1", "non2", "non3"},
+			Args:  []any{"non1", "non2", "non3"},
 		},
 	},
 	{
 		input: []string{"--flagf", "99", "-f", "2.2", "-f", "text", "non3"},
 		opts: &OptionsTest{
-			Flagf: []interface{}{int64(99), 2.2, "text"},
-			Args:  []interface{}{"non3"},
+			Flagf: []any{int64(99), 2.2, "text"},
+			Args:  []any{"non3"},
 		},
 	},
 	{
 		input: []string{"--flagg", "99:99", "-g", "2.2:abc", "-g", "text:2.3", "non3"},
 		opts: &OptionsTest{
-			Flagg: map[string]interface{}{"99": int64(99), "2.2": "abc", "text": 2.3},
-			Args:  []interface{}{"non3"},
+			Flagg: map[string]any{"99": int64(99), "2.2": "abc", "text": 2.3},
+			Args:  []any{"non3"},
 		},
 	},
 	{
@@ -138,7 +138,7 @@ var testCases = []*argsCase{
 			Header: map[string][]string{
 				"abc": {"99312"},
 			},
-			Mslice: map[interface{}][]interface{}{
+			Mslice: map[any][]any{
 				"abc":      {int64(123)},
 				int64(123): {false, 1.23},
 				true:       {"xyz"},
@@ -158,7 +158,7 @@ func TestFlag(t *testing.T) {
 
 type testFnFlag struct {
 	input []*FunctionArg
-	opts  interface{}
+	opts  any
 }
 
 var testFnCases = []*testFnFlag{
@@ -197,7 +197,7 @@ var testFnCases = []*testFnFlag{
 			Flagb:      true,
 			Flaga:      "text",
 			IsMentionA: true,
-			Args:       []interface{}{"non-flag-or-options"},
+			Args:       []any{"non-flag-or-options"},
 		},
 	},
 	{
@@ -211,7 +211,7 @@ var testFnCases = []*testFnFlag{
 		opts: &OptionsTest{
 			Flaga:      "text",
 			IsMentionA: true,
-			Args:       []interface{}{"non-flag-or-options"},
+			Args:       []any{"non-flag-or-options"},
 		},
 	},
 	{
@@ -226,7 +226,7 @@ var testFnCases = []*testFnFlag{
 			Flaga:      "text",
 			IsMentionA: true,
 			Flagc:      int64(873),
-			Args:       []interface{}{"non-flag-or-options"},
+			Args:       []any{"non-flag-or-options"},
 		},
 	},
 	{
@@ -243,7 +243,7 @@ var testFnCases = []*testFnFlag{
 			Flaga:      "text of text",
 			IsMentionA: true,
 			Flagc:      int64(873),
-			Args:       []interface{}{"non-flag-or-options"},
+			Args:       []any{"non-flag-or-options"},
 		},
 	},
 	{
@@ -261,7 +261,7 @@ var testFnCases = []*testFnFlag{
 		opts: &OptionsTest{
 			Flagd: 1.2,
 			Flage: []int64{22, 42},
-			Args:  []interface{}{"non1", "non2", "non3"},
+			Args:  []any{"non1", "non2", "non3"},
 		},
 	},
 	{
@@ -275,8 +275,8 @@ var testFnCases = []*testFnFlag{
 			{Val: "non3", Kind: reflect.String},
 		},
 		opts: &OptionsTest{
-			Flagf: []interface{}{int64(99), 2.2, "text"},
-			Args:  []interface{}{"non3"},
+			Flagf: []any{int64(99), 2.2, "text"},
+			Args:  []any{"non3"},
 		},
 	},
 	{
@@ -290,8 +290,8 @@ var testFnCases = []*testFnFlag{
 			{Val: "non3", Kind: reflect.String},
 		},
 		opts: &OptionsTest{
-			Flagg: map[string]interface{}{"99": int64(99), "2.2": "abc", "text": 2.3},
-			Args:  []interface{}{"non3"},
+			Flagg: map[string]any{"99": int64(99), "2.2": "abc", "text": 2.3},
+			Args:  []any{"non3"},
 		},
 	},
 	{
@@ -327,7 +327,7 @@ var testFnCases = []*testFnFlag{
 			Header: map[string][]string{
 				"abc": {"99312"},
 			},
-			Mslice: map[interface{}][]interface{}{
+			Mslice: map[any][]any{
 				"abc":      {int64(123)},
 				int64(123): {false, 1.23},
 				true:       {"xyz"},
@@ -340,7 +340,7 @@ var testFnCases = []*testFnFlag{
 			{Val: "abc:99312", Kind: reflect.String},
 			{Val: "-m", Kind: reflect.String},
 			{
-				Val: map[interface{}][]interface{}{
+				Val: map[any][]any{
 					"xyz": {int64(852), 1.6, "ioy"},
 					1.45:  {"hol", int64(93), true},
 				},
@@ -351,7 +351,7 @@ var testFnCases = []*testFnFlag{
 			Header: map[string][]string{
 				"abc": {"99312"},
 			},
-			Mslice: map[interface{}][]interface{}{
+			Mslice: map[any][]any{
 				"xyz": {int64(852), 1.6, "ioy"},
 				1.45:  {"hol", int64(93), true},
 			},
@@ -373,7 +373,7 @@ var testMainFlagCases = []*argsCase{
 		input: []string{"--name", "nyu", "target"},
 		opts: &MainOptions{
 			Cookfile: defaultCookfile,
-			Args: map[string]interface{}{
+			Args: map[string]any{
 				"name": "nyu",
 			},
 			Targets: []string{"target"},
@@ -383,8 +383,8 @@ var testMainFlagCases = []*argsCase{
 		input: []string{"--age:i", "32", "--age:i", "34", "--height:f", "1.57"},
 		opts: &MainOptions{
 			Cookfile: defaultCookfile,
-			Args: map[string]interface{}{
-				"age":    []interface{}{int64(32), int64(34)},
+			Args: map[string]any{
+				"age":    []any{int64(32), int64(34)},
 				"height": 1.57,
 			},
 		},
@@ -393,9 +393,9 @@ var testMainFlagCases = []*argsCase{
 		input: []string{"--age:s", "32", "--age:i", "34", "--info:a:i", "3.21:33", "--info:s:i", "8.23:33", "--info:s:a", "bb:32.1"},
 		opts: &MainOptions{
 			Cookfile: defaultCookfile,
-			Args: map[string]interface{}{
-				"age": []interface{}{"32", int64(34)},
-				"info": map[interface{}]interface{}{
+			Args: map[string]any{
+				"age": []any{"32", int64(34)},
+				"info": map[any]any{
 					3.21:   int64(33),
 					"8.23": int64(33),
 					"bb":   32.1,
@@ -407,7 +407,7 @@ var testMainFlagCases = []*argsCase{
 		input: []string{"sample1", "sample2", "-c", "Cooksample", "--name=test", "--info:i=123", "--lerp:a", "3.21"},
 		opts: &MainOptions{
 			Cookfile: "Cooksample",
-			Args: map[string]interface{}{
+			Args: map[string]any{
 				"name": "test",
 				"info": int64(123),
 				"lerp": 3.21,

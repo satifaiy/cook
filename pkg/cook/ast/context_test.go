@@ -11,9 +11,9 @@ import (
 
 func TestVariableReference(t *testing.T) {
 	ctx := NewCook().(*cook).renewContext()
-	ctx.SetVariable("a", []interface{}{
-		[]interface{}{int64(1), int64(2)},
-		[]interface{}{2.3, 9.2},
+	ctx.SetVariable("a", []any{
+		[]any{int64(1), int64(2)},
+		[]any{2.3, 9.2},
 	}, reflect.Slice, nil)
 	// test index manipulation
 	ix := &Index{Index: &BasicLit{Lit: "1", Kind: token.INTEGER}, X: &Ident{Name: "a"}}
@@ -23,16 +23,16 @@ func TestVariableReference(t *testing.T) {
 	require.NoError(t, as2.Evaluate(ctx))
 	v, k, _ := ctx.GetVariable("b")
 	assert.Equal(t, reflect.Slice, k)
-	assert.Equal(t, []interface{}{2.3, 9.2, "text"}, v)
+	assert.Equal(t, []any{2.3, 9.2, "text"}, v)
 	v, k, _ = ctx.GetVariable("a")
 	assert.Equal(t, reflect.Slice, k)
-	assert.Equal(t, []interface{}{
-		[]interface{}{int64(1), int64(2)},
-		[]interface{}{2.3, 9.2, "text"},
+	assert.Equal(t, []any{
+		[]any{int64(1), int64(2)},
+		[]any{2.3, 9.2, "text"},
 	}, v)
-	a := make(map[interface{}]interface{})
-	a["a"] = []interface{}{
-		[]interface{}{int64(1), int64(2)},
-		[]interface{}{2.3, 9.2},
+	a := make(map[any]any)
+	a["a"] = []any{
+		[]any{int64(1), int64(2)},
+		[]any{2.3, 9.2},
 	}
 }

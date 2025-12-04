@@ -2,7 +2,6 @@ package ast
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -26,7 +25,7 @@ var fl1, fl2 = &BasicLit{Lit: "5.2", Kind: token.FLOAT}, &BasicLit{Lit: "29.1", 
 var bl1, bl2 = &BasicLit{Lit: "true", Kind: token.BOOLEAN}, &BasicLit{Lit: "false", Kind: token.BOOLEAN}
 var sl1, sl2 = &BasicLit{Lit: "98", Kind: token.STRING}, &BasicLit{Lit: "sample", Kind: token.STRING}
 var keys []Node
-var lmaps = make(map[interface{}]interface{})
+var lmaps = make(map[any]any)
 var basicSize int64
 var echo = &BasicLit{Lit: "-e", Kind: token.STRING}
 var curOSTok, nonOSTok = getOSToken()
@@ -55,9 +54,9 @@ func init() {
 	ctx.SetVariable("var2", 3.43, reflect.Float64, nil)
 	ctx.SetVariable("var3", true, reflect.Bool, nil)
 	ctx.SetVariable("var4", "sample text", reflect.String, nil)
-	ctx.SetVariable("var5", []interface{}{3.2, 2.2}, reflect.Slice, nil)
-	ctx.SetVariable("var6", map[interface{}]interface{}{1.1: "xyz", "abc": int64(873)}, reflect.String, nil)
-	ctx.SetVariable("var7", []interface{}{int64(12), int64(21), 5.2, 29.1, true, false, "98", "sample"}, reflect.Slice, nil)
+	ctx.SetVariable("var5", []any{3.2, 2.2}, reflect.Slice, nil)
+	ctx.SetVariable("var6", map[any]any{1.1: "xyz", "abc": int64(873)}, reflect.String, nil)
+	ctx.SetVariable("var7", []any{int64(12), int64(21), 5.2, 29.1, true, false, "98", "sample"}, reflect.Slice, nil)
 	ctx.SetVariable("var8", lmaps, reflect.Map, nil)
 	stat, err := os.Stat("basic.go")
 	if err != nil {
@@ -71,7 +70,7 @@ type WrapHelper struct {
 	nodes []Node
 }
 
-func (wh *WrapHelper) Evaluate(ctx Context) (i interface{}, k reflect.Kind, err error) {
+func (wh *WrapHelper) Evaluate(ctx Context) (i any, k reflect.Kind, err error) {
 	for _, n := range wh.nodes {
 		if i, k, err = n.Evaluate(ctx); err != nil {
 			break
@@ -93,7 +92,7 @@ func indexesNode(inds ...int) (nodes []Node) {
 
 type ExprAstTestCase struct {
 	node  Node
-	value interface{}
+	value any
 	kind  reflect.Kind
 	isErr bool
 }
@@ -227,12 +226,12 @@ var exprCases = []*ExprAstTestCase{
 	},
 	{ // case 24
 		node:  &ArrayLiteral{Values: []Node{il1, il2, bl2}},
-		value: []interface{}{int64(12), int64(21), false},
+		value: []any{int64(12), int64(21), false},
 		kind:  reflect.Slice,
 	},
 	{ // case 25
 		node:  &MapLiteral{Keys: []Node{sl1, sl2, fl1}, Values: []Node{il1, il2, bl1}},
-		value: map[interface{}]interface{}{sl1.Lit: int64(12), sl2.Lit: int64(21), 5.2: true},
+		value: map[any]any{sl1.Lit: int64(12), sl2.Lit: int64(21), 5.2: true},
 		kind:  reflect.Map,
 	},
 	{ // case 26
@@ -240,7 +239,7 @@ var exprCases = []*ExprAstTestCase{
 			&Delete{X: &Ident{Name: "var7"}, Indexes: indexesNode(0, 2, 3)},
 			&Ident{Name: "var7"},
 		),
-		value: []interface{}{int64(21), true, false, "98", "sample"},
+		value: []any{int64(21), true, false, "98", "sample"},
 		kind:  reflect.Slice,
 	},
 	{ // case 27
@@ -248,7 +247,7 @@ var exprCases = []*ExprAstTestCase{
 			&Delete{X: &Ident{Name: "var7"}, Indexes: indexesNode(1), End: indexesNode(3)[0]},
 			&Ident{Name: "var7"},
 		),
-		value: []interface{}{int64(21), "sample"},
+		value: []any{int64(21), "sample"},
 		kind:  reflect.Slice,
 	},
 	{ // case 28
@@ -256,7 +255,7 @@ var exprCases = []*ExprAstTestCase{
 			&Delete{X: &Ident{Name: "var8"}, Indexes: indexesNode(1, 3, 7)},
 			&Ident{Name: "var8"},
 		),
-		value: map[interface{}]interface{}{int64(2): int64(6), int64(4): int64(10), int64(5): int64(12), int64(6): int64(14), int64(8): int64(18)},
+		value: map[any]any{int64(2): int64(6), int64(4): int64(10), int64(5): int64(12), int64(6): int64(14), int64(8): int64(18)},
 		kind:  reflect.Map,
 	},
 	{ // case 29
@@ -264,7 +263,7 @@ var exprCases = []*ExprAstTestCase{
 			&Delete{X: &Ident{Name: "var8"}, Indexes: indexesNode(2)},
 			&Ident{Name: "var8"},
 		),
-		value: map[interface{}]interface{}{int64(4): int64(10), int64(5): int64(12), int64(6): int64(14), int64(8): int64(18)},
+		value: map[any]any{int64(4): int64(10), int64(5): int64(12), int64(6): int64(14), int64(8): int64(18)},
 		kind:  reflect.Map,
 	},
 	{ // case 30
@@ -284,7 +283,7 @@ var exprCases = []*ExprAstTestCase{
 	},
 	{ // case 33
 		node:  &SubValue{X: &ArrayLiteral{Values: indexesNode(1, 2, 3, 4, 5, 6, 7)}, Range: &Interval{A: indexesNode(0)[0], B: indexesNode(5)[0]}},
-		value: []interface{}{int64(2), int64(3), int64(4)},
+		value: []any{int64(2), int64(3), int64(4)},
 		kind:  reflect.Slice,
 	},
 	{ // case 34
@@ -573,7 +572,7 @@ func TestCallExpression(t *testing.T) {
 
 func verifyContentFile(t *testing.T, file, content string) {
 	require.FileExists(t, file)
-	b, err := ioutil.ReadFile(file)
+	b, err := os.ReadFile(file)
 	require.NoError(t, err)
 	assert.Equal(t, content, string(b))
 }
@@ -643,8 +642,8 @@ func TestTransformation(t *testing.T) {
 	c := NewCook().(*cook)
 	c.renewContext()
 	// add array and map
-	a := make([]interface{}, 10)
-	b := make(map[interface{}]interface{})
+	a := make([]any, 10)
+	b := make(map[any]any)
 	for i := 0; i < numElem; i++ {
 		a[int64(i)] = int64(i + 1)
 		b[int64(i)] = int64(i + 1)
@@ -726,7 +725,7 @@ func TestTransformation(t *testing.T) {
 		},
 	})
 	c.AddTarget(dummyBase, "all")
-	require.NoError(t, c.Execute(map[string]interface{}{
+	require.NoError(t, c.Execute(map[string]any{
 		avar.Name: a,
 		bvar.Name: b,
 	}))

@@ -317,7 +317,7 @@ type fdOptions struct {
 	Args      []string
 }
 
-func removeAll(folderOnly bool, f Function, i interface{}) (interface{}, error) {
+func removeAll(folderOnly bool, f Function, i any) (any, error) {
 	opts := i.(*fdOptions)
 	paths, err := readPath(f, opts, -1, 0)
 	if err != nil {
@@ -464,7 +464,7 @@ func moveOrCopyGlob(sources []string, dir string, action func(moveTo bool, a, b 
 	return nil
 }
 
-func moveOrCopy(f Function, i interface{}, action func(moveTo bool, a, b string) error) (interface{}, error) {
+func moveOrCopy(f Function, i any, action func(moveTo bool, a, b string) error) (any, error) {
 	paths, err := readPath(f, i.(*fdOptions), -1, 0)
 	if err != nil {
 		return nil, err
@@ -578,7 +578,7 @@ var chdirFlags = &args.Flags{
 
 var chownFlags = &args.Flags{
 	Flags: []*args.Flag{
-		{Short: "n", Long: "guinum", Description: `Tell @chown that the given user and/or group id is a numeric id. 
+		{Short: "n", Long: "guinum", Description: `Tell @chown that the given user and/or group id is a numeric id.
 												   By default, @chown treat the given user or group as a username or group name
 												   which required lookup to find a numeric representation of user or group id.`},
 		{Short: "r", Long: "recursive", Description: `Tell @chown to change owner of all file or directory in the hierarchy.`},
@@ -633,7 +633,7 @@ func init() {
 		panic("unsupported operation get working directory \"Getwd\"")
 	}
 
-	registerFunction(NewBaseFunction(mkdirFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(mkdirFlags, func(f Function, i any) (any, error) {
 		opts := i.(*fdOptions)
 		paths, err := readPath(f, opts, -1, 0)
 		if err != nil {
@@ -655,18 +655,18 @@ func init() {
 		return nil, nil
 	}))
 
-	registerFunction(NewBaseFunction(rmdirFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(rmdirFlags, func(f Function, i any) (any, error) {
 		return removeAll(true, f, i)
 	}))
 
-	registerFunction(NewBaseFunction(rmFlags, func(f Function, i interface{}) (v interface{}, err error) {
+	registerFunction(NewBaseFunction(rmFlags, func(f Function, i any) (v any, err error) {
 		if v, err = removeAll(false, f, i); err != nil && i.(*fdOptions).Silence {
 			err = nil
 		}
 		return
 	}))
 
-	registerFunction(NewBaseFunction(chdirFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(chdirFlags, func(f Function, i any) (any, error) {
 		opts := i.(*fdOptions)
 		if len(opts.Args) == 0 {
 			return nil, os.Chdir(originalWorkingDir)
@@ -679,7 +679,7 @@ func init() {
 		}
 	}, "chdir"))
 
-	registerFunction(NewBaseFunction(chownFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(chownFlags, func(f Function, i any) (any, error) {
 		opts := i.(*fdOptions)
 		// must call ownergroup before path
 		u, g, err := readUserGroup(opts)
@@ -709,7 +709,7 @@ func init() {
 		return nil, nil
 	}))
 
-	registerFunction(NewBaseFunction(chmodFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(chmodFlags, func(f Function, i any) (any, error) {
 		opts := i.(*fdOptions)
 		paths, err := readPath(f, opts, -1, 1)
 		if err != nil {
@@ -740,7 +740,7 @@ func init() {
 		return nil, nil
 	}))
 
-	registerFunction(NewBaseFunction(mvFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(mvFlags, func(f Function, i any) (any, error) {
 		return moveOrCopy(f, i, func(moveTo bool, a, b string) error {
 			if moveTo {
 				if isFile, err := copyOrMoveDir(true, a, b); err != nil {
@@ -753,7 +753,7 @@ func init() {
 		})
 	}, "move"))
 
-	registerFunction(NewBaseFunction(cpFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(cpFlags, func(f Function, i any) (any, error) {
 		opts := i.(*fdOptions)
 		return moveOrCopy(f, i, func(_ bool, a, b string) error {
 			if opts.Recursive {

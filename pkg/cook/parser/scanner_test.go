@@ -97,7 +97,7 @@ var stringScanCase = []*testCase{
 
 func TestStringScanner(t *testing.T) {
 	var errs []error
-	eh := func(p token.Position, msg string, args ...interface{}) {
+	eh := func(p token.Position, msg string, args ...any) {
 		errs = append(errs, fmt.Errorf(msg, args...))
 	}
 	for i, tc := range stringScanCase {
@@ -328,7 +328,7 @@ func init() {
 
 func TestGeneralScanner(t *testing.T) {
 	var errs []error
-	eh := func(p token.Position, msg string, args ...interface{}) {
+	eh := func(p token.Position, msg string, args ...any) {
 		errs = append(errs, fmt.Errorf(msg, args...))
 	}
 	s, err := NewScannerSrc(token.NewFile("sample", len(source)), []byte(source), eh)

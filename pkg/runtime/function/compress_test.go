@@ -1,7 +1,6 @@
 package function
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -14,9 +13,9 @@ import (
 )
 
 func verifyFileContent(t *testing.T, f1, f2 string) {
-	cf1, err := ioutil.ReadFile(f1)
+	cf1, err := os.ReadFile(f1)
 	require.NoError(t, err)
-	cf2, err := ioutil.ReadFile(f2)
+	cf2, err := os.ReadFile(f2)
 	require.NoError(t, err)
 	assert.Equal(t, string(cf1), string(cf2))
 }

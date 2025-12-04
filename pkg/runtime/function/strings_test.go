@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"regexp"
@@ -20,32 +19,32 @@ import (
 
 type caseInOut struct {
 	args   []*args.FunctionArg
-	output interface{}
+	output any
 }
 
 var splitCase = []*caseInOut{
 	{
 		args:   convertToFunctionArgs([]string{"--by", ".", "53.24.0"}),
-		output: []interface{}{"53", "24", "0"},
+		output: []any{"53", "24", "0"},
 	},
 	{
 		args: convertToFunctionArgs([]string{"--ws", "-l", "A yo-yo is a toy consisting of an axle connected to two disks"}),
-		output: []interface{}{
-			[]interface{}{"A", "yo-yo", "is", "a", "toy", "consisting", "of", "an", "axle", "connected", "to", "two", "disks"},
+		output: []any{
+			[]any{"A", "yo-yo", "is", "a", "toy", "consisting", "of", "an", "axle", "connected", "to", "two", "disks"},
 		},
 	},
 	{
 		args: convertToFunctionArgs([]string{"--ws", "-l", "A yo-yo is a toy consisting of\nan axle connected to two disks"}),
-		output: []interface{}{
-			[]interface{}{"A", "yo-yo", "is", "a", "toy", "consisting", "of"},
-			[]interface{}{"an", "axle", "connected", "to", "two", "disks"},
+		output: []any{
+			[]any{"A", "yo-yo", "is", "a", "toy", "consisting", "of"},
+			[]any{"an", "axle", "connected", "to", "two", "disks"},
 		},
 	},
 	{
 		args: convertToFunctionArgs([]string{"--by", ",*", "-l", "A yo-yo is,* a toy consisting of\nan axle connected,* to two disks"}),
-		output: []interface{}{
-			[]interface{}{"A yo-yo is", " a toy consisting of"},
-			[]interface{}{"an axle connected", " to two disks"},
+		output: []any{
+			[]any{"A yo-yo is", " a toy consisting of"},
+			[]any{"an axle connected", " to two disks"},
 		},
 	},
 	{
@@ -58,11 +57,11 @@ var splitCase = []*caseInOut{
 	},
 	{
 		args:   convertToFunctionArgs([]string{"--ws", "-l", "--rc", "1", "A yo-yo is a toy consisting of\nan axle connected to two disks"}),
-		output: []interface{}{"an", "axle", "connected", "to", "two", "disks"},
+		output: []any{"an", "axle", "connected", "to", "two", "disks"},
 	},
 	{
 		args:   convertToFunctionArgs([]string{"--ws", "-l", "--rc", ":1", "A yo-yo is a toy consisting of\nan axle connected to two disks"}),
-		output: []interface{}{"yo-yo", "axle"},
+		output: []any{"yo-yo", "axle"},
 	},
 	{
 		args:   convertToFunctionArgs([]string{"--regx", "\\s", "A yo-yo is a toy consisting of\nan axle connected to two disks"}),
@@ -82,11 +81,11 @@ var splitCase = []*caseInOut{
 	},
 	{
 		args:   convertToFunctionArgs([]string{"--ws", "-l", "--rc", ":-1", "A yo-yo is a toy consisting of\nan axle connected to two disks"}),
-		output: []interface{}{"of", "disks"},
+		output: []any{"of", "disks"},
 	},
 	{
 		args:   convertToFunctionArgs([]string{"--by", " ", "-l", "--rc", "-1", "abc 123\n822 974"}),
-		output: []interface{}{"822", "974"},
+		output: []any{"822", "974"},
 	},
 }
 
@@ -161,13 +160,13 @@ func TestPadding(t *testing.T) {
 	}
 }
 
-const content = `At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum 
-deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, 
-similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem 
-rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil 
-impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. 
-Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates 
-repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut 
+const content = `At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum
+deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident,
+similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem
+rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil
+impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus.
+Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates
+repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut
 reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.`
 
 var replaceCase = []*caseInOut{
@@ -300,11 +299,11 @@ func TestReplace(t *testing.T) {
 	defer os.Remove(ofile)
 	for i, args := range testFileArgs {
 		t.Logf("TestReplaceFile case #%d", i+1)
-		require.NoError(t, ioutil.WriteFile(f, buf.Bytes(), 0700))
+		require.NoError(t, os.WriteFile(f, buf.Bytes(), 0700))
 		out, err := fn.Apply(args)
 		assert.NoError(t, err)
 		assert.Nil(t, out)
-		bout, err := ioutil.ReadFile(args[len(args)-1].Val.(string)[1:])
+		bout, err := os.ReadFile(args[len(args)-1].Val.(string)[1:])
 		assert.NoError(t, err)
 		var testResult = string(bout)
 		var expectStr string

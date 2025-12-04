@@ -16,7 +16,7 @@ import (
 type pathInOut struct {
 	name   string
 	args   []*args.FunctionArg
-	output interface{}
+	output any
 }
 
 var pathTestCase []*pathInOut

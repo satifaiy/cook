@@ -87,7 +87,7 @@ func TestCook(t *testing.T) {
 		&ExprWrapperStatement{X: &Call{Kind: token.AT, Name: "target3"}},
 	}}}
 	// execute all && exectue explicit name
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		if i == 0 {
 			require.NoError(t, cook.Execute(nil))
 		} else {

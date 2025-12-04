@@ -18,19 +18,19 @@ type pathOptions struct {
 	Args []string
 }
 
-func validate(f Function, opts *pathOptions, narg int, fn func(...string) (interface{}, error)) (interface{}, error) {
+func validate(f Function, opts *pathOptions, narg int, fn func(...string) (any, error)) (any, error) {
 	if len(opts.Args) != narg {
 		return "", fmt.Errorf("%s require %d arugment file path", f.Name(), narg)
 	}
 	return fn(opts.Args...)
 }
 
-func dHandler(f Function, i interface{}, narg int, fn func(string) (string, error)) (interface{}, error) {
-	return validate(f, i.(*pathOptions), narg, func(s ...string) (interface{}, error) { return fn(s[0]) })
+func dHandler(f Function, i any, narg int, fn func(string) (string, error)) (any, error) {
+	return validate(f, i.(*pathOptions), narg, func(s ...string) (any, error) { return fn(s[0]) })
 }
 
-func sHandler(f Function, i interface{}, narg int, fn func(string) string) (interface{}, error) {
-	return validate(f, i.(*pathOptions), narg, func(s ...string) (interface{}, error) { return fn(s[0]), nil })
+func sHandler(f Function, i any, narg int, fn func(string) string) (any, error) {
+	return validate(f, i.(*pathOptions), narg, func(s ...string) (any, error) { return fn(s[0]), nil })
 }
 
 var pathOptsType = reflect.TypeOf((*pathOptions)(nil)).Elem()
@@ -120,40 +120,40 @@ var prelFlags = &args.Flags{
 }
 
 func init() {
-	registerFunction(NewBaseFunction(pabsFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(pabsFlags, func(f Function, i any) (any, error) {
 		return dHandler(f, i, 1, filepath.Abs)
 	}))
 
-	registerFunction(NewBaseFunction(pbaseFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(pbaseFlags, func(f Function, i any) (any, error) {
 		return sHandler(f, i, 1, filepath.Base)
 	}))
 
-	registerFunction(NewBaseFunction(pextFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(pextFlags, func(f Function, i any) (any, error) {
 		return sHandler(f, i, 1, filepath.Ext)
 	}))
 
-	registerFunction(NewBaseFunction(pdirFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(pdirFlags, func(f Function, i any) (any, error) {
 		return sHandler(f, i, 1, filepath.Dir)
 	}))
 
-	registerFunction(NewBaseFunction(pcleanFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(pcleanFlags, func(f Function, i any) (any, error) {
 		return sHandler(f, i, 1, filepath.Clean)
 	}))
 
-	registerFunction(NewBaseFunction(psplitFlags, func(f Function, i interface{}) (interface{}, error) {
-		return validate(f, i.(*pathOptions), 1, func(s ...string) (interface{}, error) {
+	registerFunction(NewBaseFunction(psplitFlags, func(f Function, i any) (any, error) {
+		return validate(f, i.(*pathOptions), 1, func(s ...string) (any, error) {
 			return strings.Split(s[0], fmt.Sprintf("%c", os.PathSeparator)), nil
 		})
 	}))
 
-	registerFunction(NewBaseFunction(pglobFlags, func(f Function, i interface{}) (interface{}, error) {
-		return validate(f, i.(*pathOptions), 1, func(s ...string) (interface{}, error) {
+	registerFunction(NewBaseFunction(pglobFlags, func(f Function, i any) (any, error) {
+		return validate(f, i.(*pathOptions), 1, func(s ...string) (any, error) {
 			return filepath.Glob(s[0])
 		})
 	}))
 
-	registerFunction(NewBaseFunction(prelFlags, func(f Function, i interface{}) (interface{}, error) {
-		return validate(f, i.(*pathOptions), 2, func(s ...string) (interface{}, error) {
+	registerFunction(NewBaseFunction(prelFlags, func(f Function, i any) (any, error) {
+		return validate(f, i.(*pathOptions), 2, func(s ...string) (any, error) {
 			return filepath.Rel(s[0], s[1])
 		})
 	}))

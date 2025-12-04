@@ -14,14 +14,13 @@ const (
 	TransformMap
 )
 
-//
 type iTransform struct {
 	Len    func() int
-	Source func(ctx Context, i interface{}) (interface{}, reflect.Kind, error)
-	Value  func(ctx Context, i, val interface{}) (interface{}, reflect.Kind, error)
+	Source func(ctx Context, i any) (any, reflect.Kind, error)
+	Value  func(ctx Context, i, val any) (any, reflect.Kind, error)
 }
 
-func (it *iTransform) Transform(ctx Context, index interface{}) (interface{}, reflect.Kind, error) {
+func (it *iTransform) Transform(ctx Context, index any) (any, reflect.Kind, error) {
 	if v, _, err := it.Source(ctx, index); err != nil {
 		return nil, 0, err
 	} else {
@@ -29,7 +28,6 @@ func (it *iTransform) Transform(ctx Context, index interface{}) (interface{}, re
 	}
 }
 
-//
 type StringInterpolation struct {
 	*Base
 	mark  byte
@@ -38,7 +36,7 @@ type StringInterpolation struct {
 	nodes []Node
 }
 
-func (si *StringInterpolation) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (si *StringInterpolation) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	if len(si.nodes) == 0 || len(si.pos) == 0 || len(si.nodes) != len(si.pos) {
 		panic("cook internal error: string interpolation not properly constructed")
 	}

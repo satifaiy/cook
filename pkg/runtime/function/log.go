@@ -17,7 +17,7 @@ type printOption struct {
 	Strip  bool `flag:"strip"`  // strip whitespace before print for each argument
 	OmitNL bool `flag:"omitln"` // add newline, default yes
 	Echo   bool `flag:"echo"`
-	Args   []interface{}
+	Args   []any
 }
 
 const (
@@ -42,7 +42,7 @@ var printFlags = &args.Flags{
 	Description: printDesc,
 }
 
-var printFn = NewBaseFunction(printFlags, func(bf Function, i interface{}) (v interface{}, err error) {
+var printFn = NewBaseFunction(printFlags, func(bf Function, i any) (v any, err error) {
 	opts := i.(*printOption)
 	txt := ""
 	if len(opts.Args) > 0 {

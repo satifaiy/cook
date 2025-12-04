@@ -89,7 +89,7 @@ func (b *mdb) Description(s string) {
 
 func (b *mdb) Flag(flags []*Flag, t reflect.Type) {
 	b.FlagVisitor(func(fw FlagWriter) {
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			t = t.Elem()
 		}
 		for _, fl := range flags {
@@ -157,7 +157,7 @@ func (b *mdb) Example(s, topAnchor string) {
 	b.buf.WriteString(s)
 	b.buf.WriteString("\n```\n")
 	if topAnchor != "" {
-		b.buf.WriteString(fmt.Sprintf("[back top](#%s)\n", topAnchor))
+		fmt.Fprintf(b.buf, "[back top](#%s)\n", topAnchor)
 	}
 	b.stage++
 }

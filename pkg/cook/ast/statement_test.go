@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func expectVar(t *testing.T, ctx Context, name string, v interface{}, k reflect.Kind) {
+func expectVar(t *testing.T, ctx Context, name string, v any, k reflect.Kind) {
 	rv, rk, _ := ctx.GetVariable(name)
 	assert.Equal(t, k, rk)
 	assert.Equal(t, v, rv)
@@ -63,7 +63,7 @@ func TestStatement(t *testing.T) {
 	// check variable
 	expectVar(t, ctx, "var1", (float64(28)+9.3)*float64(34), reflect.Float64)
 	expectVar(t, ctx, "var2", (float64(28)+9.3)*float64(100), reflect.Float64)
-	expectVar(t, ctx, "var3", []interface{}{int64(34), true, "text", 9.2}, reflect.Slice)
+	expectVar(t, ctx, "var3", []any{int64(34), true, "text", 9.2}, reflect.Slice)
 }
 
 func TestIfElse(t *testing.T) {
@@ -117,17 +117,17 @@ func TestForStatement(t *testing.T) {
 		},
 	}
 	ctx = NewCook().(*cook).renewContext()
-	ctx.SetVariable("a", make([]interface{}, 0), reflect.Slice, nil)
+	ctx.SetVariable("a", make([]any, 0), reflect.Slice, nil)
 	err := stf.Evaluate(ctx)
 	require.NoError(t, err)
-	expectVar(t, ctx, "a", []interface{}{int64(2), int64(3)}, reflect.Slice)
+	expectVar(t, ctx, "a", []any{int64(2), int64(3)}, reflect.Slice)
 	// test [1..4]
 	stf.Range.AInclude = true
 	stf.Range.BInclude = true
-	ctx.SetVariable("a", make([]interface{}, 0), reflect.Slice, nil)
+	ctx.SetVariable("a", make([]any, 0), reflect.Slice, nil)
 	err = stf.Evaluate(ctx)
 	require.NoError(t, err)
-	expectVar(t, ctx, "a", []interface{}{int64(1), int64(2), int64(3), int64(4)}, reflect.Slice)
+	expectVar(t, ctx, "a", []any{int64(1), int64(2), int64(3), int64(4)}, reflect.Slice)
 	// test array
 	stf.Range = nil
 	stf.Value = &Ident{Name: "v"}
@@ -135,10 +135,10 @@ func TestForStatement(t *testing.T) {
 	stf.Insts.Stmts = append(stf.Insts.Stmts, &AssignStatement{
 		Ident: &Ident{Name: "a"}, Op: token.ADD_ASSIGN, Value: &Ident{Name: "v"},
 	})
-	ctx.SetVariable("a", make([]interface{}, 0), reflect.Slice, nil)
+	ctx.SetVariable("a", make([]any, 0), reflect.Slice, nil)
 	err = stf.Evaluate(ctx)
 	require.NoError(t, err)
-	expectVar(t, ctx, "a", []interface{}{int64(0), int64(4), int64(1), int64(5), int64(2), int64(6)}, reflect.Slice)
+	expectVar(t, ctx, "a", []any{int64(0), int64(4), int64(1), int64(5), int64(2), int64(6)}, reflect.Slice)
 	// test map
 	stf.Oprnd = &MapLiteral{Keys: indexesNode(8, 7, 3), Values: indexesNode(4, 5, 6)}
 	stf.Insts.Stmts = []Statement{
@@ -154,10 +154,10 @@ func TestForStatement(t *testing.T) {
 			},
 		},
 	}
-	ctx.SetVariable("a", make(map[interface{}]interface{}), reflect.Map, nil)
+	ctx.SetVariable("a", make(map[any]any), reflect.Map, nil)
 	err = stf.Evaluate(ctx)
 	require.NoError(t, err)
-	expectVar(t, ctx, "a", map[interface{}]interface{}{int64(8): int64(4), int64(7): int64(5), int64(3): int64(6)}, reflect.Map)
+	expectVar(t, ctx, "a", map[any]any{int64(8): int64(4), int64(7): int64(5), int64(3): int64(6)}, reflect.Map)
 }
 
 func TestBreakContinue(t *testing.T) {

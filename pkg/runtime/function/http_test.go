@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -19,10 +18,10 @@ import (
 )
 
 func init() {
-	returnFunc = func(resp *http.Response, canResponseHasBody bool) interface{} { return resp }
+	returnFunc = func(resp *http.Response, _ bool) any { return resp }
 }
 
-func responseResponse(i interface{}, method string) (string, error) {
+func responseResponse(i any, method string) (string, error) {
 	if i == nil {
 		return "", fmt.Errorf("no response")
 	}
@@ -69,7 +68,7 @@ func getTestServer() *httptest.Server {
 		case http.MethodPut:
 			// don't reflect body but add it to header assuming test out have little body data
 			defer r.Body.Close()
-			b, err := ioutil.ReadAll(r.Body)
+			b, err := io.ReadAll(r.Body)
 			if err != nil {
 				panic(err)
 			}
@@ -102,7 +101,7 @@ func TestMain(t *testing.M) {
 }
 
 func setupHttpTest() error {
-	return ioutil.WriteFile(jsonFile, []byte(jsonContent), 0700)
+	return os.WriteFile(jsonFile, []byte(jsonContent), 0700)
 }
 
 func cleanupHttpTest() {
@@ -113,7 +112,7 @@ type httpTestInOut struct {
 	args    []*args.FunctionArg
 	methods []string
 	err     bool
-	output  interface{}
+	output  any
 }
 
 var getTestCase = []httpTestInOut{

@@ -10,16 +10,16 @@ import (
 )
 
 type Scope interface {
-	GetVariable(name string) (value interface{}, kind reflect.Kind, fromEnv bool)
-	SetVariable(name string, value interface{}, kind reflect.Kind, bubble func(v interface{}, k reflect.Kind) error) bool
-	SetReturnValue(v interface{}, kind reflect.Kind)
-	GetReturnValue() (v interface{}, kind reflect.Kind)
+	GetVariable(name string) (value any, kind reflect.Kind, fromEnv bool)
+	SetVariable(name string, value any, kind reflect.Kind, bubble func(v any, k reflect.Kind) error) bool
+	SetReturnValue(v any, kind reflect.Kind)
+	GetReturnValue() (v any, kind reflect.Kind)
 }
 
 type ivar struct {
-	value  interface{}
+	value  any
 	kind   reflect.Kind
-	bubble func(v interface{}, kind reflect.Kind) error
+	bubble func(v any, kind reflect.Kind) error
 }
 
 type xScope struct {
@@ -29,7 +29,7 @@ type xScope struct {
 	vars         map[string]*ivar
 }
 
-func (xs *xScope) GetVariable(name string) (value interface{}, kind reflect.Kind, fromEnv bool) {
+func (xs *xScope) GetVariable(name string) (value any, kind reflect.Kind, fromEnv bool) {
 	if iv, ok := xs.vars[name]; !ok {
 		if xs.parent == nil {
 			goto tryEnv
@@ -48,7 +48,7 @@ tryEnv:
 	return nil, 0, false
 }
 
-func (xs *xScope) SetVariable(name string, value interface{}, kind reflect.Kind, bubble func(v interface{}, k reflect.Kind) error) bool {
+func (xs *xScope) SetVariable(name string, value any, kind reflect.Kind, bubble func(v any, k reflect.Kind) error) bool {
 	switch kind {
 	case reflect.Int64, reflect.Float64, reflect.Bool, reflect.String, reflect.Slice, reflect.Map, TransformSlice, TransformMap:
 	default:
@@ -69,11 +69,11 @@ func (xs *xScope) SetVariable(name string, value interface{}, kind reflect.Kind,
 	return true
 }
 
-func (xs *xScope) SetReturnValue(v interface{}, kind reflect.Kind) {
+func (xs *xScope) SetReturnValue(v any, kind reflect.Kind) {
 	xs.returnResult = &ivar{value: v, kind: kind}
 }
 
-func (xs *xScope) GetReturnValue() (v interface{}, kind reflect.Kind) {
+func (xs *xScope) GetReturnValue() (v any, kind reflect.Kind) {
 	if xs.returnResult != nil {
 		v, kind = xs.returnResult.value, xs.returnResult.kind
 		xs.returnResult = nil
@@ -104,19 +104,19 @@ type xContext struct {
 	loops      []int
 }
 
-func (xc *xContext) GetVariable(name string) (value interface{}, kind reflect.Kind, fromEnv bool) {
+func (xc *xContext) GetVariable(name string) (value any, kind reflect.Kind, fromEnv bool) {
 	return xc.scope.GetVariable(name)
 }
 
-func (xc *xContext) SetVariable(name string, value interface{}, kind reflect.Kind, bubble func(v interface{}, k reflect.Kind) error) bool {
+func (xc *xContext) SetVariable(name string, value any, kind reflect.Kind, bubble func(v any, k reflect.Kind) error) bool {
 	return xc.scope.SetVariable(name, value, kind, bubble)
 }
 
-func (xc *xContext) SetReturnValue(v interface{}, kind reflect.Kind) {
+func (xc *xContext) SetReturnValue(v any, kind reflect.Kind) {
 	xc.scope.SetReturnValue(v, kind)
 }
 
-func (xc *xContext) GetReturnValue() (v interface{}, kind reflect.Kind) {
+func (xc *xContext) GetReturnValue() (v any, kind reflect.Kind) {
 	return xc.scope.GetReturnValue()
 }
 

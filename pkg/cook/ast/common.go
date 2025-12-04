@@ -38,7 +38,7 @@ func stringOf(ctx Context, ns ...Node) (ses []string, err error) {
 	return
 }
 
-func convertToNum(s string) (interface{}, reflect.Kind, error) {
+func convertToNum(s string) (any, reflect.Kind, error) {
 	if iv, err := strconv.ParseInt(s, 10, 64); err == nil {
 		return iv, reflect.Int64, nil
 	} else if fv, err := strconv.ParseFloat(s, 64); err == nil {
@@ -48,7 +48,7 @@ func convertToNum(s string) (interface{}, reflect.Kind, error) {
 	}
 }
 
-func convertToFloat(ctx Context, val interface{}, kind reflect.Kind) (float64, error) {
+func convertToFloat(ctx Context, val any, kind reflect.Kind) (float64, error) {
 	switch kind {
 	case reflect.Int64:
 		return float64(val.(int64)), nil
@@ -61,7 +61,7 @@ func convertToFloat(ctx Context, val interface{}, kind reflect.Kind) (float64, e
 	}
 }
 
-func convertToInt(ctx Context, val interface{}, kind reflect.Kind) (int64, error) {
+func convertToInt(ctx Context, val any, kind reflect.Kind) (int64, error) {
 	switch kind {
 	case reflect.Int64:
 		return val.(int64), nil
@@ -74,7 +74,7 @@ func convertToInt(ctx Context, val interface{}, kind reflect.Kind) (int64, error
 	}
 }
 
-func convertToString(ctx Context, val interface{}, kind reflect.Kind) (string, error) {
+func convertToString(ctx Context, val any, kind reflect.Kind) (string, error) {
 	switch kind {
 	case reflect.Int64:
 		return strconv.FormatInt(val.(int64), 10), nil
@@ -129,7 +129,7 @@ func expandArrayToFuncArgs(ctx Context, rv reflect.Value, array []*args.Function
 	return array
 }
 
-func addOperator(ctx Context, vl, vr interface{}, vkl, vkr reflect.Kind) (interface{}, reflect.Kind, error) {
+func addOperator(ctx Context, vl, vr any, vkl, vkr reflect.Kind) (any, reflect.Kind, error) {
 	// array operation
 	// 0: 1 + ["a", 2, 3.5] => [1, "a", 2, 3.5]
 	// 1: ["b", 123, true] + 2.1 => ["b", 123, true, 2.1]
@@ -170,17 +170,17 @@ func addOperator(ctx Context, vl, vr interface{}, vkl, vkr reflect.Kind) (interf
 opOnArray:
 	switch head {
 	case 0:
-		return append([]interface{}{vl}, vr.([]interface{})...), reflect.Slice, nil
+		return append([]any{vl}, vr.([]any)...), reflect.Slice, nil
 	case 1:
-		return append(vl.([]interface{}), vr), reflect.Slice, nil
+		return append(vl.([]any), vr), reflect.Slice, nil
 	case 2:
-		return append(vl.([]interface{}), vr.([]interface{})...), reflect.Slice, nil
+		return append(vl.([]any), vr.([]any)...), reflect.Slice, nil
 	default:
 		panic("illegal state for array operation")
 	}
 }
 
-func numOperator(ctx Context, op token.Token, vl, vr interface{}, vkl, vkr reflect.Kind) (interface{}, reflect.Kind, error) {
+func numOperator(ctx Context, op token.Token, vl, vr any, vkl, vkr reflect.Kind) (any, reflect.Kind, error) {
 	switch {
 	case vkl == reflect.Float64 || vkr == reflect.Float64:
 		if token.ADD < op && op < token.REM {
@@ -242,7 +242,7 @@ numInt:
 	}
 }
 
-func logicOperator(ctx Context, op token.Token, vl, vr interface{}, vkl, vkr reflect.Kind) (interface{}, reflect.Kind, error) {
+func logicOperator(ctx Context, op token.Token, vl, vr any, vkl, vkr reflect.Kind) (any, reflect.Kind, error) {
 	if (vkl == reflect.Float64 || vkl == reflect.Int64) &&
 		(vkr == reflect.Float64 || vkr == reflect.Int64) {
 		if fl, err := convertToFloat(ctx, vl, vkl); err != nil {

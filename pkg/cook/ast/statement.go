@@ -49,7 +49,7 @@ func (as *AssignStatement) Evaluate(ctx Context) (err error) {
 		return
 	}
 
-	var i interface{}
+	var i any
 	var k reflect.Kind
 	var mMerge *MergeMap
 	if ce, ok := as.Value.(*Call); ok {
@@ -70,12 +70,12 @@ func (as *AssignStatement) Evaluate(ctx Context) (err error) {
 avoidEvaluate:
 	switch {
 	case as.Op == token.ASSIGN:
-		var bubble func(v interface{}, k reflect.Kind) error
+		var bubble func(v any, k reflect.Kind) error
 		_, isVar := as.Ident.(*Ident)
 		ix, isIndex := as.Value.(*Index)
 		// we bubble to update original data
 		if isVar && isIndex {
-			bubble = func(v interface{}, k reflect.Kind) error {
+			bubble = func(v any, k reflect.Kind) error {
 				return ix.Set(ctx, v, k, nil)
 			}
 		}
@@ -117,7 +117,6 @@ avoidEvaluate:
 	}
 }
 
-//
 type BreakContinueStatement struct {
 	*Base
 	Label string
@@ -136,7 +135,6 @@ func (bcs *BreakContinueStatement) Evaluate(ctx Context) error {
 	return nil
 }
 
-//
 type ExprWrapperStatement struct {
 	X Node
 }

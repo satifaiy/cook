@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"reflect"
@@ -21,13 +20,13 @@ type Node interface {
 	Code
 	ErrPos() string
 	Position() token.Position
-	Evaluate(ctx Context) (interface{}, reflect.Kind, error)
+	Evaluate(ctx Context) (any, reflect.Kind, error)
 }
 
 type SettableNode interface {
 	Node
 	VariableName() string
-	Set(ctx Context, v interface{}, k reflect.Kind, bubble func(v interface{}, k reflect.Kind) error) error
+	Set(ctx Context, v any, k reflect.Kind, bubble func(v any, k reflect.Kind) error) error
 	IsEqual(sn SettableNode) bool
 }
 
@@ -245,7 +244,7 @@ func (b *Base) ErrPos() string {
 
 // BasicLit Evaluate convert a string lit value to it corresponding type value such as
 // integer, float, bool ...etc
-func (bl *BasicLit) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err error) {
+func (bl *BasicLit) Evaluate(ctx Context) (v any, k reflect.Kind, err error) {
 	switch bl.Kind {
 	case token.INTEGER:
 		v, err = strconv.ParseInt(bl.Lit, 10, 64)
@@ -271,14 +270,14 @@ func (bl *BasicLit) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err er
 // Ident Evaluate read value from current scope always to global scope. If no variable exist, it will
 // look into environment varaible and return it value if founded otherwise a nil and invalid kind is
 // return instead.
-func (id *Ident) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err error) {
+func (id *Ident) Evaluate(ctx Context) (v any, k reflect.Kind, err error) {
 	v, k, _ = ctx.GetVariable(id.Name)
 	return
 }
 
 func (id *Ident) VariableName() string { return id.Name }
 
-func (id *Ident) Set(ctx Context, v interface{}, k reflect.Kind, bubble func(v interface{}, k reflect.Kind) error) (err error) {
+func (id *Ident) Set(ctx Context, v any, k reflect.Kind, bubble func(v any, k reflect.Kind) error) (err error) {
 	if v != nil {
 		ctx.SetVariable(id.Name, v, k, bubble)
 	} else {
@@ -295,7 +294,7 @@ func (id *Ident) IsEqual(sn SettableNode) bool {
 // Conditional Evaluate check the condition boolean result, if the result is true is return result of
 // True expression's evaluation otherwise a result from False expression's evalute is return instread.
 // This expression is known as short if or ternary expression.
-func (cd *Conditional) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err error) {
+func (cd *Conditional) Evaluate(ctx Context) (v any, k reflect.Kind, err error) {
 	if v, k, err = cd.Cond.Evaluate(ctx); err != nil {
 		return nil, 0, err
 	} else if k != reflect.Bool {
@@ -308,7 +307,7 @@ func (cd *Conditional) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err
 }
 
 // Fallback Evaluate return the primary result if no error
-func (fb *Fallback) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err error) {
+func (fb *Fallback) Evaluate(ctx Context) (v any, k reflect.Kind, err error) {
 	if v, k, err = fb.Primary.Evaluate(ctx); err != nil || v == nil {
 		pErr := err
 		v, k, err = fb.Default.Evaluate(ctx)
@@ -327,7 +326,7 @@ func (fb *Fallback) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err er
 }
 
 // SizeOf Evaluate return size of variable or literal value such as string, array, map
-func (sf *SizeOf) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err error) {
+func (sf *SizeOf) Evaluate(ctx Context) (v any, k reflect.Kind, err error) {
 	if unary, ok := sf.X.(*Unary); ok && unary.Op == token.FD {
 		// return the size of the file instead
 		if fp, k, err := unary.Evaluate(ctx); err != nil {
@@ -337,7 +336,7 @@ func (sf *SizeOf) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err erro
 		} else if stat, err := os.Stat(fp.(string)); err != nil {
 			return int64(-1), reflect.Int64, nil
 		} else if stat.IsDir() {
-			if fis, err := ioutil.ReadDir(fp.(string)); err != nil {
+			if fis, err := os.ReadDir(fp.(string)); err != nil {
 				return nil, reflect.Invalid, err
 			} else {
 				return int64(len(fis)), reflect.Int64, nil
@@ -359,7 +358,7 @@ func (sf *SizeOf) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err erro
 
 // IsType Evaluate return a boolean value. It return true if variable X value is satified
 // the given type Token.
-func (it *IsType) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err error) {
+func (it *IsType) Evaluate(ctx Context) (v any, k reflect.Kind, err error) {
 	bit := 0
 	for _, tok := range it.Types {
 		bit |= tok.Type()
@@ -405,7 +404,7 @@ func (it *IsType) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err erro
 }
 
 // TypeCast Evaluate return convertible value converted from string to string
-func (tc *TypeCast) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err error) {
+func (tc *TypeCast) Evaluate(ctx Context) (v any, k reflect.Kind, err error) {
 	iv, ik, _ := tc.X.Evaluate(ctx)
 	tk := tc.To.Kind()
 	if tk != ik {
@@ -452,7 +451,7 @@ func (tc *TypeCast) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err er
 }
 
 // Exit Evaluate will exit the execution with the given code.
-func (e *Exit) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err error) {
+func (e *Exit) Evaluate(ctx Context) (v any, k reflect.Kind, err error) {
 	if v, r, err := e.ExitCode.Evaluate(ctx); err == nil {
 		var code int64
 		switch r {
@@ -471,8 +470,8 @@ func (e *Exit) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err error) 
 }
 
 // ArrayLiteral Evaluate return value of array or list
-func (al *ArrayLiteral) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err error) {
-	result := make([]interface{}, 0, len(al.Values))
+func (al *ArrayLiteral) Evaluate(ctx Context) (v any, k reflect.Kind, err error) {
+	result := make([]any, 0, len(al.Values))
 	for _, lv := range al.Values {
 		if v, _, err = lv.Evaluate(ctx); err != nil {
 			return nil, 0, err
@@ -483,8 +482,8 @@ func (al *ArrayLiteral) Evaluate(ctx Context) (v interface{}, k reflect.Kind, er
 }
 
 // MapLiteral Evaluate return value of map or directionary
-func (ml *MapLiteral) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
-	m := make(map[interface{}]interface{})
+func (ml *MapLiteral) Evaluate(ctx Context) (any, reflect.Kind, error) {
+	m := make(map[any]any)
 	for i, lk := range ml.Keys {
 		vk, _, err := lk.Evaluate(ctx)
 		if err != nil {
@@ -499,13 +498,13 @@ func (ml *MapLiteral) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
 	return m, reflect.Map, nil
 }
 
-func (mm *MergeMap) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (mm *MergeMap) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	return nil, 0, errors.New("merge map expression does not support evaluate, it indent to use as Set")
 }
 
 func (mm *MergeMap) VariableName() string { return mm.Value.String() }
 
-func (mm *MergeMap) Set(ctx Context, setVal interface{}, _ reflect.Kind) error {
+func (mm *MergeMap) Set(ctx Context, setVal any, _ reflect.Kind) error {
 	vv := reflect.ValueOf(setVal)
 	if vv.Kind() != reflect.Map {
 		return fmt.Errorf("%v is not a map", setVal)
@@ -534,7 +533,7 @@ func (mm *MergeMap) Set(ctx Context, setVal interface{}, _ reflect.Kind) error {
 
 // Delete Evaluate delete item from array or map. Delete return error if there is an error occorred
 // otherwise the result value is always nil
-func (d *Delete) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (d *Delete) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	if v, k, err := d.X.Evaluate(ctx); err != nil {
 		return nil, 0, err
 	} else {
@@ -589,13 +588,13 @@ func (d *Delete) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
 }
 
 // Index Evaluate return item of array or map
-func (ix *Index) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (ix *Index) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	return ix.evaluateInternal(ctx, nil)
 }
 
 func (ix *Index) VariableName() string { return ix.X.String() }
 
-func (ix *Index) Set(ctx Context, v interface{}, k reflect.Kind, _ func(v interface{}, k reflect.Kind) error) (err error) {
+func (ix *Index) Set(ctx Context, v any, k reflect.Kind, _ func(v any, k reflect.Kind) error) (err error) {
 	_, _, err = ix.evaluateInternal(ctx, v)
 	return
 }
@@ -616,7 +615,7 @@ func (ix *Index) IsEqual(sn SettableNode) bool {
 	}
 }
 
-func (ix *Index) evaluateInternal(ctx Context, setVal interface{}) (interface{}, reflect.Kind, error) {
+func (ix *Index) evaluateInternal(ctx Context, setVal any) (any, reflect.Kind, error) {
 	if i, ik, err := ix.Index.Evaluate(ctx); err != nil {
 		return nil, 0, err
 	} else if v, vk, err := ix.X.Evaluate(ctx); err != nil {
@@ -674,7 +673,7 @@ func (ix *Index) evaluateInternal(ctx Context, setVal interface{}) (interface{},
 }
 
 // SubValue Evaluate return sub string or a slice of original slice
-func (sv *SubValue) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (sv *SubValue) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	if si, _, err := sv.Range.Evaluate(ctx); err != nil {
 		return nil, 0, err
 	} else if v, vk, err := sv.X.Evaluate(ctx); err != nil {
@@ -701,8 +700,8 @@ func (sv *SubValue) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
 }
 
 // Range Evaluate return a result of slice of 2 items value if not error occurred during evaluation
-func (r *Interval) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
-	step, stk := interface{}(int64(1)), reflect.Int64
+func (r *Interval) Evaluate(ctx Context) (any, reflect.Kind, error) {
+	step, stk := any(int64(1)), reflect.Int64
 	if a, ak, err := r.A.Evaluate(ctx); err != nil {
 		return nil, 0, err
 	} else if b, bk, err := r.B.Evaluate(ctx); err != nil {
@@ -780,12 +779,12 @@ func (r *Interval) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
 }
 
 // OSysCheck Evaluate return true if current operating system is match against expression OS value
-func (osc *OSysCheck) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (osc *OSysCheck) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	return osc.OS.String() == runtime.GOOS, reflect.Bool, nil
 }
 
 // Exists Evaluate verify whether a variable, file/folder, command or function is existed
-func (e *Exists) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (e *Exists) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	if e.Op == token.FD {
 		fp, kind, err := e.X.Evaluate(ctx)
 		if err != nil {
@@ -816,7 +815,7 @@ func (e *Exists) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
 }
 
 // Call Evaluate execute one of the following type an external command line, a target or a function
-func (c *Call) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (c *Call) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	if c.FuncLit != nil {
 		return c.FuncLit.Execute(ctx, c.Args)
 	}
@@ -939,7 +938,7 @@ func (c *Call) funcArgs(ctx Context) ([]*args.FunctionArg, error) {
 	return sargs, nil
 }
 
-func (c *Call) setPipeArgument(ctx Context, v interface{}, k reflect.Kind) (err error) {
+func (c *Call) setPipeArgument(ctx Context, v any, k reflect.Kind) (err error) {
 	if c.Kind == token.HASH {
 		if c.pipeCmdArgs, err = convertToString(ctx, v, k); err != nil {
 			return err
@@ -950,7 +949,7 @@ func (c *Call) setPipeArgument(ctx Context, v interface{}, k reflect.Kind) (err 
 	return nil
 }
 
-func (pp *Pipe) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (pp *Pipe) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	pp.X.OutputResult = true
 	if result, kind, err := pp.X.Evaluate(ctx); err != nil {
 		return nil, 0, err
@@ -982,12 +981,12 @@ func (pp *Pipe) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
 }
 
 // ReadFrom Evaluate return content of a file
-func (rf *ReadFrom) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (rf *ReadFrom) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	if v, k, err := rf.File.Evaluate(ctx); err != nil {
 		return nil, 0, err
 	} else if k != reflect.String {
 		return nil, 0, fmt.Errorf("readfrom expression required string")
-	} else if b, err := ioutil.ReadFile(v.(string)); err != nil {
+	} else if b, err := os.ReadFile(v.(string)); err != nil {
 		return nil, 0, err
 	} else {
 		return string(b), reflect.String, nil
@@ -995,7 +994,7 @@ func (rf *ReadFrom) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
 }
 
 // WriteTo Evaluate write/append the data to the file
-func (rt *RedirectTo) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (rt *RedirectTo) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	files, err := stringOf(ctx, rt.Files...)
 	if err != nil {
 		return nil, 0, err
@@ -1026,7 +1025,7 @@ func (rt *RedirectTo) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
 				fs.Close()
 				return nil, 0, err
 			}
-		} else if err = ioutil.WriteFile(f, b, 0700); err != nil {
+		} else if err = os.WriteFile(f, b, 0700); err != nil {
 			return nil, 0, err
 		}
 	}
@@ -1062,12 +1061,11 @@ tryReader:
 }
 
 // Paran Evaluate execute inner node and return it's response
-func (p *Paren) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (p *Paren) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	return p.Inner.Evaluate(ctx)
 }
 
-//
-func (un *Unary) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (un *Unary) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	v, vk, err := un.X.Evaluate(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -1106,9 +1104,9 @@ func (un *Unary) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
 		case reflect.String:
 			return v.(string) != "", reflect.Bool, nil
 		case reflect.Array:
-			return len(v.([]interface{})) > 0, reflect.Bool, nil
+			return len(v.([]any)) > 0, reflect.Bool, nil
 		case reflect.Map:
-			return len(v.([]interface{})) > 0, reflect.Bool, nil
+			return len(v.([]any)) > 0, reflect.Bool, nil
 		default:
 			return v != nil, reflect.Bool, nil
 		}
@@ -1120,7 +1118,7 @@ func (un *Unary) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
 }
 
 // IncDecExpr Evaluate increase or delete value by 1
-func (idc *IncDec) Evaluate(ctx Context) (v interface{}, k reflect.Kind, err error) {
+func (idc *IncDec) Evaluate(ctx Context) (v any, k reflect.Kind, err error) {
 	// handle variable
 	defer func() {
 		if ident, ok := idc.X.(*Ident); ok && err == nil {
@@ -1158,7 +1156,7 @@ retryOnString:
 }
 
 // Binary Evaluate return result of pair operation
-func (b *Binary) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (b *Binary) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	if vl, vkl, err := b.L.Evaluate(ctx); err != nil {
 		return nil, 0, err
 	} else if vr, vkr, err := b.R.Evaluate(ctx); err != nil {
@@ -1183,7 +1181,7 @@ func (b *Binary) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
 }
 
 // Transformation Evaluate apply tranform on an array or map
-func (t *Transformation) Evaluate(ctx Context) (interface{}, reflect.Kind, error) {
+func (t *Transformation) Evaluate(ctx Context) (any, reflect.Kind, error) {
 	tv, k, err := t.Ident.Evaluate(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -1197,7 +1195,7 @@ func (t *Transformation) Evaluate(ctx Context) (interface{}, reflect.Kind, error
 			vv := reflect.ValueOf(tv)
 			for i := 0; i < vv.Len(); i++ {
 				indv := vv.Index(i)
-				v, _, err := t.Fn.internalExecute(ctx, 2, func(vi int) (interface{}, reflect.Kind, error) {
+				v, _, err := t.Fn.internalExecute(ctx, 2, func(vi int) (any, reflect.Kind, error) {
 					if vi == 0 {
 						return int64(i), reflect.Int64, nil
 					} else {
@@ -1215,7 +1213,7 @@ func (t *Transformation) Evaluate(ctx Context) (interface{}, reflect.Kind, error
 			keys := vv.MapKeys()
 			for _, key := range keys {
 				indv := vv.MapIndex(key)
-				v, _, err := t.Fn.internalExecute(ctx, 2, func(vi int) (interface{}, reflect.Kind, error) {
+				v, _, err := t.Fn.internalExecute(ctx, 2, func(vi int) (any, reflect.Kind, error) {
 					if vi == 0 {
 						return key.Interface(), key.Kind(), nil
 					} else {
@@ -1241,15 +1239,15 @@ func (t *Transformation) Evaluate(ctx Context) (interface{}, reflect.Kind, error
 			tk = TransformSlice
 			it = &iTransform{
 				Len: func() int { return vv.Len() },
-				Source: func(ctx Context, i interface{}) (interface{}, reflect.Kind, error) {
+				Source: func(ctx Context, i any) (any, reflect.Kind, error) {
 					v := vv.Index(int(i.(int64)))
 					if v.Kind() == reflect.Interface {
 						return v.Interface(), v.Elem().Kind(), nil
 					}
 					return v.Interface(), v.Kind(), nil
 				},
-				Value: func(ctx Context, i, val interface{}) (interface{}, reflect.Kind, error) {
-					return t.Fn.internalExecute(ctx, 2, func(iv int) (interface{}, reflect.Kind, error) {
+				Value: func(ctx Context, i, val any) (any, reflect.Kind, error) {
+					return t.Fn.internalExecute(ctx, 2, func(iv int) (any, reflect.Kind, error) {
 						if iv == 0 {
 							return i.(int64), reflect.Int64, nil
 						} else {
@@ -1263,15 +1261,15 @@ func (t *Transformation) Evaluate(ctx Context) (interface{}, reflect.Kind, error
 			tk = TransformMap
 			it = &iTransform{
 				Len: func() int { return vv.Len() },
-				Source: func(ctx Context, i interface{}) (interface{}, reflect.Kind, error) {
+				Source: func(ctx Context, i any) (any, reflect.Kind, error) {
 					v := vv.MapIndex(reflect.ValueOf(i))
 					if !v.IsValid() {
 						return nil, 0, fmt.Errorf("index %v is not exist", i)
 					}
 					return v.Interface(), v.Kind(), nil
 				},
-				Value: func(ctx Context, i, val interface{}) (interface{}, reflect.Kind, error) {
-					return t.Fn.internalExecute(ctx, 2, func(iv int) (interface{}, reflect.Kind, error) {
+				Value: func(ctx Context, i, val any) (any, reflect.Kind, error) {
+					return t.Fn.internalExecute(ctx, 2, func(iv int) (any, reflect.Kind, error) {
 						if iv == 0 {
 							return i, reflect.ValueOf(i).Kind(), nil
 						} else {
@@ -1286,8 +1284,8 @@ func (t *Transformation) Evaluate(ctx Context) (interface{}, reflect.Kind, error
 			it = &iTransform{
 				Len:    func() int { return ts.Len() },
 				Source: ts.Transform,
-				Value: func(ctx Context, i, val interface{}) (interface{}, reflect.Kind, error) {
-					return t.Fn.internalExecute(ctx, 2, func(iv int) (interface{}, reflect.Kind, error) {
+				Value: func(ctx Context, i, val any) (any, reflect.Kind, error) {
+					return t.Fn.internalExecute(ctx, 2, func(iv int) (any, reflect.Kind, error) {
 						if iv == 0 {
 							return i.(int64), reflect.Int64, nil
 						} else {
@@ -1302,8 +1300,8 @@ func (t *Transformation) Evaluate(ctx Context) (interface{}, reflect.Kind, error
 			it = &iTransform{
 				Len:    func() int { return ts.Len() },
 				Source: ts.Transform,
-				Value: func(ctx Context, i, val interface{}) (interface{}, reflect.Kind, error) {
-					return t.Fn.internalExecute(ctx, 2, func(iv int) (interface{}, reflect.Kind, error) {
+				Value: func(ctx Context, i, val any) (any, reflect.Kind, error) {
+					return t.Fn.internalExecute(ctx, 2, func(iv int) (any, reflect.Kind, error) {
 						if iv == 0 {
 							return i, reflect.ValueOf(i).Kind(), nil
 						} else {

@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"io/ioutil"
+	"os"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -41,10 +41,10 @@ type scanner struct {
 	errorHandler    ErrorHandler
 }
 
-type ErrorHandler func(p token.Position, msg string, args ...interface{})
+type ErrorHandler func(p token.Position, msg string, args ...any)
 
 func NewScanner(file *token.File, eh ErrorHandler) (*scanner, error) {
-	src, err := ioutil.ReadFile(file.Name())
+	src, err := os.ReadFile(file.Name())
 	if err != nil {
 		return nil, err
 	}

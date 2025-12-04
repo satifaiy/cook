@@ -3,7 +3,7 @@ package args
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -31,7 +31,7 @@ type FunctionMeta struct {
 type MainOptions struct {
 	Cookfile string
 	Targets  []string
-	Args     map[string]interface{}
+	Args     map[string]any
 	FuncMeta *FunctionMeta
 	IsHelp   bool
 }
@@ -46,7 +46,7 @@ func ParseMainArgument(args []string) (*MainOptions, error) {
 		readFrom := ""
 		for _, arg := range args[1:] {
 			if readFrom != "" {
-				b, err := ioutil.ReadFile(arg)
+				b, err := os.ReadFile(arg)
 				if err != nil {
 					return nil, err
 				}
@@ -110,10 +110,10 @@ func ParseMainArgument(args []string) (*MainOptions, error) {
 			}
 			// create args if first encouter
 			if mo.Args == nil {
-				mo.Args = make(map[string]interface{})
+				mo.Args = make(map[string]any)
 			}
 			// special case for map
-			var pv, pk interface{}
+			var pv, pk any
 			if s != reflect.Invalid {
 				icolon := strings.IndexByte(val, ':')
 				if icolon < 1 {
@@ -124,8 +124,8 @@ func ParseMainArgument(args []string) (*MainOptions, error) {
 				} else if pv, err = parseFlagValue(s, val[icolon+1:]); err != nil {
 					return nil, err
 				} else if mp, ok := mo.Args[vname]; !ok {
-					mo.Args[vname] = map[interface{}]interface{}{pk: pv}
-				} else if mpv, ok := mp.(map[interface{}]interface{}); ok {
+					mo.Args[vname] = map[any]any{pk: pv}
+				} else if mpv, ok := mp.(map[any]any); ok {
 					mpv[pk] = pv
 				} else {
 					return nil, fmt.Errorf("variable %s value %v (%s) is not a map", vname, mp, reflect.ValueOf(mp).Kind())
@@ -137,7 +137,7 @@ func ParseMainArgument(args []string) (*MainOptions, error) {
 				if vex.Kind() == reflect.Slice {
 					mo.Args[vname] = reflect.Append(vex, reflect.ValueOf(pv)).Interface()
 				} else {
-					mo.Args[vname] = []interface{}{exist, pv}
+					mo.Args[vname] = []any{exist, pv}
 				}
 			} else {
 				mo.Args[vname] = pv
@@ -170,7 +170,7 @@ type Flag struct {
 	Description string
 }
 
-func (flag *Flag) Set(fname string, field reflect.Value, val string, nextArg interface{}, nextArgKind reflect.Kind) (advance bool, err error) {
+func (flag *Flag) Set(fname string, field reflect.Value, val string, nextArg any, nextArgKind reflect.Kind) (advance bool, err error) {
 	// get field type
 	t := field.Kind()
 	switch {
@@ -247,7 +247,7 @@ func (flag *Flag) Set(fname string, field reflect.Value, val string, nextArg int
 		if icolon < 1 {
 			return false, fmt.Errorf("invalid map entry %s for flag %s", val, flag.Long)
 		}
-		var kval, vval interface{}
+		var kval, vval any
 		if kval, err = parseFlagValue(te.Key().Kind(), val[:icolon]); err != nil {
 			return false, err
 		}
@@ -287,7 +287,7 @@ func (flag *Flag) Set(fname string, field reflect.Value, val string, nextArg int
 			advance = true
 			val = nextArg.(string)
 		}
-		var vval interface{}
+		var vval any
 		if vval, err = parseFlagValue(t, val); err != nil {
 			return false, err
 		}
@@ -297,7 +297,7 @@ func (flag *Flag) Set(fname string, field reflect.Value, val string, nextArg int
 }
 
 type FunctionArg struct {
-	Val  interface{}
+	Val  any
 	Kind reflect.Kind
 }
 
@@ -395,15 +395,15 @@ func (flags *Flags) checkFlag(arg string) (flag *Flag, fval string, err error) {
 // of interface value (any value), in order to avoid parsing back and forth between
 // string and numeric value. When args values is all strings then `ParseFlagFunction`
 // is behave exactly as `Parse` method
-func (flags *Flags) ParseFunctionArgs(args []*FunctionArg) (interface{}, error) {
+func (flags *Flags) ParseFunctionArgs(args []*FunctionArg) (any, error) {
 	return flags.parseInternal(nil, args)
 }
 
-func (flags *Flags) Parse(args []string) (interface{}, error) {
+func (flags *Flags) Parse(args []string) (any, error) {
 	return flags.parseInternal(args, nil)
 }
 
-func (flags *Flags) parseInternal(args []string, fnArgs []*FunctionArg) (v interface{}, err error) {
+func (flags *Flags) parseInternal(args []string, fnArgs []*FunctionArg) (v any, err error) {
 	if err = flags.ensureStruct(); err != nil {
 		return nil, err
 	}
@@ -412,9 +412,9 @@ func (flags *Flags) parseInternal(args []string, fnArgs []*FunctionArg) (v inter
 		fval   string
 		val    = reflect.New(flags.Result).Elem()
 		length = len(args)
-		arg    interface{}
+		arg    any
 		sarg   string
-		narg   interface{}
+		narg   any
 		nargk  reflect.Kind
 		field  reflect.Value
 		fname  string // field name
@@ -503,7 +503,7 @@ func (flags *Flags) findFlag(s string, short bool) (*Flag, string, error) {
 	return nil, "", fmt.Errorf("unrecognize flag %s", s)
 }
 
-func parseFlagValue(kind reflect.Kind, v string) (interface{}, error) {
+func parseFlagValue(kind reflect.Kind, v string) (any, error) {
 	switch kind {
 	case reflect.Int64:
 		return strconv.ParseInt(v, 10, 64)
@@ -531,20 +531,16 @@ func parseFlagValue(kind reflect.Kind, v string) (interface{}, error) {
 func findField(t reflect.Type, v reflect.Value, name string) (rfield reflect.Value, filedName string, err error) {
 	numField := t.NumField()
 	mention, found := false, false
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		field := t.Field(i)
 		tag := field.Tag.Get("flag")
 		if !found && strings.HasPrefix(tag, name) {
-			var defaultVal interface{}
 			icomma := strings.IndexByte(tag, ',')
 			if (icomma != -1 && tag[:icomma] != name) || (icomma == -1 && tag != name) {
 				continue
 			}
 			rfield = v.Field(i)
 			filedName = field.Name
-			if defaultVal != nil {
-				rfield.Set(reflect.ValueOf(defaultVal))
-			}
 			if mention {
 				break
 			}

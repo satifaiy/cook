@@ -64,7 +64,7 @@ func executeFunction(opts *args.MainOptions) {
 			vk = v.Kind()
 			goto revisit
 		case vk <= reflect.Complex128 || vk == reflect.String:
-			if _, err = w.WriteString(fmt.Sprintf("%v", v.Interface())); err != nil {
+			if _, err = fmt.Fprintf(w, "%v", v.Interface()); err != nil {
 				return err
 			}
 		case vk == reflect.Array || vk == reflect.Slice:
@@ -72,7 +72,7 @@ func executeFunction(opts *args.MainOptions) {
 				return err
 			}
 			size := v.Len()
-			for i := 0; i < size; i++ {
+			for i := range size {
 				sv := v.Index(i)
 				if err = output(w, sv); err != nil {
 					return err

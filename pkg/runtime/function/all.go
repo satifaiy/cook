@@ -7,10 +7,10 @@ import (
 	"github.com/cozees/cook/pkg/runtime/args"
 )
 
-type FuncHandler func(f Function, i interface{}) (interface{}, error)
+type FuncHandler func(f Function, i any) (any, error)
 
 type Function interface {
-	Apply([]*args.FunctionArg) (interface{}, error)
+	Apply([]*args.FunctionArg) (any, error)
 	Name() string
 	Flags() *args.Flags
 	Alias() []string
@@ -50,7 +50,7 @@ func (bf *BaseFunction) Name() string       { return bf.fnFlags.FuncName }
 func (bf *BaseFunction) Alias() []string    { return bf.nameAlias }
 func (bf *BaseFunction) Flags() *args.Flags { return bf.fnFlags }
 
-func (bf *BaseFunction) Apply(args []*args.FunctionArg) (interface{}, error) {
+func (bf *BaseFunction) Apply(args []*args.FunctionArg) (any, error) {
 	i, err := bf.fnFlags.ParseFunctionArgs(args)
 	if bf.handler != nil && i != nil {
 		i, err = bf.handler(bf, i)
@@ -58,7 +58,7 @@ func (bf *BaseFunction) Apply(args []*args.FunctionArg) (interface{}, error) {
 	return i, err
 }
 
-func toString(i interface{}) (string, error) {
+func toString(i any) (string, error) {
 	switch v := i.(type) {
 	case string:
 		return v, nil

@@ -2,7 +2,6 @@ package function
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	osu "os/user"
 	"path/filepath"
@@ -137,13 +136,13 @@ func TestRm(t *testing.T) {
 	assert.NoError(t, err)
 	err = os.MkdirAll(c, 0700)
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(fa, []byte("1atxt"), 0700)
+	err = os.WriteFile(fa, []byte("1atxt"), 0700)
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(f1b, []byte("fb1txt"), 0700)
+	err = os.WriteFile(f1b, []byte("fb1txt"), 0700)
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(f2b, []byte("fb2txt"), 0700)
+	err = os.WriteFile(f2b, []byte("fb2txt"), 0700)
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(fc, []byte("fctxt"), 0700)
+	err = os.WriteFile(fc, []byte("fctxt"), 0700)
 	assert.NoError(t, err)
 	f := GetFunction("rm")
 	_, err = f.Apply(convertToFunctionArgs([]string{f1b}))
@@ -206,7 +205,7 @@ func TestChown(t *testing.T) {
 		uid, gid = user.Uid, user.Gid
 
 	}
-	assert.NoError(t, ioutil.WriteFile(f, []byte("sample text"), 0700))
+	assert.NoError(t, os.WriteFile(f, []byte("sample text"), 0700))
 	_, err = fn.Apply(convertToFunctionArgs([]string{"-n", uid + ":" + gid, f}))
 	assert.NoError(t, err)
 	_, err = fn.Apply(convertToFunctionArgs([]string{"-n", uid, f}))
@@ -274,16 +273,16 @@ func TestCopy(t *testing.T) {
 	defer os.RemoveAll(dtop)
 	assert.NoError(t, os.Mkdir(dtop, 0700))
 	assert.NoError(t, os.MkdirAll(d, 0700))
-	assert.NoError(t, ioutil.WriteFile(fcp1, []byte(data1), 0700))
-	assert.NoError(t, ioutil.WriteFile(fcp2, []byte(data2), 0700))
-	assert.NoError(t, ioutil.WriteFile(fcp3, []byte(data3), 0700))
+	assert.NoError(t, os.WriteFile(fcp1, []byte(data1), 0700))
+	assert.NoError(t, os.WriteFile(fcp2, []byte(data2), 0700))
+	assert.NoError(t, os.WriteFile(fcp3, []byte(data3), 0700))
 	// check alias was done properly
 	fn := GetFunction("cp")
 	fn1 := GetFunction("copy")
 	assert.Equal(t, fn, fn1)
 	expectContent := func(a, content string) {
 		assert.FileExists(t, a)
-		data, err := ioutil.ReadFile(a)
+		data, err := os.ReadFile(a)
 		assert.NoError(t, err)
 		assert.Equal(t, content, string(data))
 	}
@@ -321,8 +320,8 @@ func TestMoveRename(t *testing.T) {
 	defer os.RemoveAll("test")
 	assert.NoError(t, os.MkdirAll(d1, 0700))
 	assert.NoError(t, os.MkdirAll(d2, 0700))
-	assert.NoError(t, ioutil.WriteFile(filepath.Join(d1, filepath.Base(f1)), []byte(dt1), 0700))
-	assert.NoError(t, ioutil.WriteFile(f2, []byte(dt2), 0700))
+	assert.NoError(t, os.WriteFile(filepath.Join(d1, filepath.Base(f1)), []byte(dt1), 0700))
+	assert.NoError(t, os.WriteFile(f2, []byte(dt2), 0700))
 	fn := GetFunction("mv")
 	fn1 := GetFunction("move")
 	assert.Equal(t, fn, fn1)

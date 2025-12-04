@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -45,7 +44,7 @@ type parser struct {
 
 func (p *parser) curPos() token.Position { return p.tfile.Position(p.cOffs) }
 
-func (p *parser) errorHandler(pos token.Position, msg string, args ...interface{}) {
+func (p *parser) errorHandler(pos token.Position, msg string, args ...any) {
 	if p.errs == nil {
 		p.errs = &cookErrors.CookError{}
 	}
@@ -101,7 +100,7 @@ func (p *parser) Parse(file string) (ast.Cook, error) {
 		return nil, err
 	}
 	tfile := token.NewFile(file, int(stat.Size()))
-	src, err := ioutil.ReadFile(file)
+	src, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +160,7 @@ nextFile:
 	if len(p.pending) > 0 {
 		p.parsed[p.tfile.Name()] = p.tfile
 		for k, v := range p.pending {
-			if src, err := ioutil.ReadFile(v.Name()); err != nil {
+			if src, err := os.ReadFile(v.Name()); err != nil {
 				return nil, err
 			} else if err := p.init(v, src); err != nil {
 				return nil, err

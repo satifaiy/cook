@@ -57,7 +57,7 @@ type compressOptions struct {
 	ext       string
 	needExt   bool
 	mode      os.FileMode
-	handler   func(w io.WriteCloser, opts *compressOptions) (interface{}, error)
+	handler   func(w io.WriteCloser, opts *compressOptions) (any, error)
 }
 
 func (co *compressOptions) validate() error {
@@ -201,7 +201,7 @@ func listFileDir(opts *compressOptions, fn listFileDirFunc) error {
 	return nil
 }
 
-func logTarVerbose(w io.Writer, kind string, args ...interface{}) {
+func logTarVerbose(w io.Writer, kind string, args ...any) {
 	if kind != "" {
 		kind = "tar." + kind
 	} else {
@@ -212,7 +212,7 @@ func logTarVerbose(w io.Writer, kind string, args ...interface{}) {
 	fmt.Fprintf(w, "%s (%s) %s: %s\n", args...)
 }
 
-func tarFileDir(w io.WriteCloser, opts *compressOptions) (v interface{}, err error) {
+func tarFileDir(w io.WriteCloser, opts *compressOptions) (v any, err error) {
 	tw := tar.NewWriter(w)
 	defer func() { err = handleClose(tw, err) }()
 	return nil, listFileDir(opts, func(source, path string, d fs.DirEntry, err error) error {
@@ -251,7 +251,7 @@ func tarFileDir(w io.WriteCloser, opts *compressOptions) (v interface{}, err err
 	})
 }
 
-func gzipFileDir(w io.WriteCloser, opts *compressOptions) (v interface{}, err error) {
+func gzipFileDir(w io.WriteCloser, opts *compressOptions) (v any, err error) {
 	gw := gzip.NewWriter(w)
 	defer func() { err = handleClose(gw, err) }()
 	if opts.Tar {
@@ -284,7 +284,7 @@ func gzipFileDir(w io.WriteCloser, opts *compressOptions) (v interface{}, err er
 	}
 }
 
-func zipFileDir(w io.WriteCloser, opts *compressOptions) (v interface{}, err error) {
+func zipFileDir(w io.WriteCloser, opts *compressOptions) (v any, err error) {
 	zw := zip.NewWriter(w)
 	defer func() { err = handleClose(zw, err) }()
 	return nil, listFileDir(opts, func(source, path string, d fs.DirEntry, err error) error {
@@ -326,7 +326,7 @@ func zipFileDir(w io.WriteCloser, opts *compressOptions) (v interface{}, err err
 	})
 }
 
-var compressFn = NewBaseFunction(compressFlags, func(f Function, i interface{}) (v interface{}, err error) {
+var compressFn = NewBaseFunction(compressFlags, func(f Function, i any) (v any, err error) {
 	opts := i.(*compressOptions)
 	if err = opts.validate(); err != nil {
 		return nil, err
@@ -557,7 +557,7 @@ func extractHandler(buf []byte, file string, opts *extractOptions) error {
 	}
 }
 
-var extractFn = NewBaseFunction(extractFlags, func(f Function, i interface{}) (interface{}, error) {
+var extractFn = NewBaseFunction(extractFlags, func(f Function, i any) (any, error) {
 	opts := i.(*extractOptions)
 	if opts.Verbose {
 		opts.verboseIO = os.Stdout

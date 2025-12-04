@@ -94,7 +94,7 @@ var ssplitFlags = &args.Flags{
 type sReplaceOption struct {
 	Regx bool   `flag:"regx"` // true if search is regular expression
 	Line string `flag:"line"` // a line to replace, format single line numer 1 or multiple line with comma 1,1,11
-	Args []interface{}
+	Args []any
 }
 
 const (
@@ -145,7 +145,7 @@ func replaceString(src, search, replace string) (pending, result string) {
 	acc := len(src)
 	b.Grow(acc + n*(len(replace)-len(search)))
 	start := 0
-	for i := 0; i < n; i++ {
+	for i := range n {
 		j := start
 		if len(search) == 0 {
 			if i > 0 {
@@ -172,7 +172,7 @@ type sPadOptions struct {
 	Right int64  `flag:"right"`
 	By    string `flag:"by"`
 	Max   int64  `flag:"max"`
-	Args  []interface{}
+	Args  []any
 }
 
 const (
@@ -238,7 +238,7 @@ func pad(left, right, max int, by, arg string) string {
 }
 
 func init() {
-	registerFunction(NewBaseFunction(spadFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(spadFlags, func(f Function, i any) (any, error) {
 		opts := i.(*sPadOptions)
 		switch si := len(opts.Args); si {
 		case 0:
@@ -268,7 +268,7 @@ func init() {
 		}
 	}))
 
-	registerFunction(NewBaseFunction(ssplitFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(ssplitFlags, func(f Function, i any) (any, error) {
 		opts := i.(*sSplitOption)
 		// validate the argument
 		if len(opts.Args) > 1 || len(opts.Args) == 0 {
@@ -295,13 +295,13 @@ func init() {
 			s.Init([]byte(sarg))
 			lastNLPos, lastLine := strings.LastIndexByte(sarg, '\n'), false
 			offs, cur, cr, cc := 0, 0, 0, 0
-			var result, array []interface{}
+			var result, array []any
 			var seg string
 			isCell := row != -2 && col != -2
 			var asg func(nl, last bool, s string) bool
 			if !isCell {
-				result = make([]interface{}, 0, len(sarg))
-				array = make([]interface{}, 0, 1)
+				result = make([]any, 0, len(sarg))
+				array = make([]any, 0, 1)
 				asg = func(nl, last bool, s string) bool {
 					if row != -2 || col != -2 {
 						if row == cr || (last && row == -1) || col == cc || (nl && col == -1) {
@@ -316,7 +316,7 @@ func init() {
 							} else {
 								result = append(result, array...)
 							}
-							array = make([]interface{}, 0, 1)
+							array = make([]any, 0, 1)
 						}
 					} else {
 						result = append(result, s)
@@ -324,7 +324,7 @@ func init() {
 					return false
 				}
 			} else {
-				asg = func(nl, last bool, s string) bool {
+				asg = func(nl, last bool, _ string) bool {
 					return (row == cr || (last && row == -1)) && (col == cc || (nl && col == -1))
 				}
 			}
@@ -442,7 +442,7 @@ func init() {
 		}
 	}))
 
-	registerFunction(NewBaseFunction(sreplaceFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(sreplaceFlags, func(f Function, i any) (any, error) {
 		opts := i.(*sReplaceOption)
 		numArgs := len(opts.Args)
 		if numArgs != 3 && numArgs != 4 {
@@ -452,7 +452,7 @@ func init() {
 		var ok bool
 		inPlace := numArgs == 3
 		sargs := make([]string, numArgs)
-		for i := 0; i < numArgs; i++ {
+		for i := range numArgs {
 			if sargs[i], ok = opts.Args[i].(string); !ok {
 				return nil, fmt.Errorf("argument %v is not a string", opts.Args[i])
 			}
@@ -469,7 +469,7 @@ func init() {
 		var lines []int
 		if opts.Line != "" {
 			if strings.IndexByte(opts.Line, ',') != -1 {
-				for _, lstr := range strings.Split(opts.Line, ",") {
+				for lstr := range strings.SplitSeq(opts.Line, ",") {
 					l, err := strconv.ParseInt(lstr, 10, 32)
 					if err != nil {
 						return nil, fmt.Errorf("invalid line format %s from %s: %w", lstr, opts.Line, err)
@@ -631,7 +631,7 @@ func init() {
 			}
 			offs, index := 0, 0
 			buf := strings.Builder{}
-			for i := 0; i < maxLine; i++ {
+			for i := range maxLine {
 				// include newline too
 				index = offs + strings.IndexByte(sargs[2][offs:], '\n') + 1
 				if index == -1 {

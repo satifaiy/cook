@@ -5,7 +5,6 @@ import (
 	"reflect"
 )
 
-//
 type ForStatement struct {
 	*Base
 	Label string
@@ -18,7 +17,7 @@ type ForStatement struct {
 
 func (fst *ForStatement) Evaluate(ctx Context) error {
 	var nb bool
-	var ni, val interface{}
+	var ni, val any
 	if fst.Oprnd != nil {
 		v, vk, err := fst.Oprnd.Evaluate(ctx)
 		if err == nil {
@@ -175,7 +174,6 @@ func (fst *ForStatement) executeInsts(ctx Context, ikind reflect.Kind, vkind ref
 	return sb, -1, nil, nil
 }
 
-//
 type IfStatement struct {
 	*Base
 	Cond  Node
@@ -196,7 +194,6 @@ func (ifst *IfStatement) Evaluate(ctx Context) error {
 	return nil
 }
 
-//
 type ElseStatement struct {
 	*Base
 	IfStmt *IfStatement

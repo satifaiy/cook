@@ -36,7 +36,7 @@ const (
 	headerDesc = `custom http header to be include or override existing header in the request.`
 	dataDesc   = `string data to be sent to the server. Although, by default the data is an empty string, function will not send
 				  empty string to the server unless it was explicit in argument with --data "".`
-	fileDesc = `a path to a file which it's content is being used as the data to send to the server. 
+	fileDesc = `a path to a file which it's content is being used as the data to send to the server.
 				  Note: if both flag "file" and "data" is given at the same time then flag "file" is used instead of "data".`
 	strictDesc = `enforce the http request and response to follow the standard of http definition for each method.`
 
@@ -44,7 +44,7 @@ const (
 	baseFnDesc = `Send an http request to the server at [URL] and return a response map which contain
 			  	  two key "header" and "body". The "header" is a map of response header where the "body"
 				  is a reader object if there is data in the body.`
-	largeBodyDesc = `function can be use with redirect statement as well as assign statement. 
+	largeBodyDesc = `function can be use with redirect statement as well as assign statement.
 			 		 However if the data from the function is too large it's better to use redirect
 					 statement to store the data in a file instead.`
 	noBodyRespDesc = `request should not have response body thus if the a restriction flag is given the
@@ -77,14 +77,14 @@ func detectContentType(r io.ReadSeekCloser) string {
 }
 
 // for override testing purpose only
-var returnFunc = func(resp *http.Response, canHasResponseBody bool) interface{} {
+var returnFunc = func(resp *http.Response, canHasResponseBody bool) any {
 	if canHasResponseBody {
 		return resp.Body
 	}
 	return nil
 }
 
-func httpRequest(bf Function, i interface{}, method string) (result interface{}, err error) {
+func httpRequest(bf Function, i any, method string) (result any, err error) {
 	opts := i.(*httpOption)
 	url, err := opts.validate(bf.Name())
 	if err != nil {
@@ -208,31 +208,31 @@ var deleteFlags = &args.Flags{
 }
 
 func init() {
-	registerFunction(NewBaseFunction(getFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(getFlags, func(f Function, i any) (any, error) {
 		return httpRequest(f, i, http.MethodGet)
 	}, "fetch"))
 
-	registerFunction(NewBaseFunction(headFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(headFlags, func(f Function, i any) (any, error) {
 		return httpRequest(f, i, http.MethodHead)
 	}))
 
-	registerFunction(NewBaseFunction(optionsFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(optionsFlags, func(f Function, i any) (any, error) {
 		return httpRequest(f, i, http.MethodOptions)
 	}))
 
-	registerFunction(NewBaseFunction(postFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(postFlags, func(f Function, i any) (any, error) {
 		return httpRequest(f, i, http.MethodPost)
 	}))
 
-	registerFunction(NewBaseFunction(patchFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(patchFlags, func(f Function, i any) (any, error) {
 		return httpRequest(f, i, http.MethodPatch)
 	}))
 
-	registerFunction(NewBaseFunction(putFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(putFlags, func(f Function, i any) (any, error) {
 		return httpRequest(f, i, http.MethodPut)
 	}))
 
-	registerFunction(NewBaseFunction(deleteFlags, func(f Function, i interface{}) (interface{}, error) {
+	registerFunction(NewBaseFunction(deleteFlags, func(f Function, i any) (any, error) {
 		return httpRequest(f, i, http.MethodDelete)
 	}))
 }

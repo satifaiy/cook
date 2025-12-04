@@ -2,7 +2,6 @@ package cook
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
@@ -56,26 +55,26 @@ cook_test___.go not found
 const nestedResult = "nasted-result.txt"
 
 // 0: LIST, 1: MAP, 2: result
-var nestLoopTestCase = [][]interface{}{
+var nestLoopTestCase = [][]any{
 	{
-		[]interface{}{int64(1), int64(2), int64(3)},
-		[]interface{}{int64(1), int64(2), 1.3},
+		[]any{int64(1), int64(2), int64(3)},
+		[]any{int64(1), int64(2), 1.3},
 	},
 	{
-		[]interface{}{int64(11), int64(4), int64(9)},
-		[]interface{}{22.4, int64(2), 1.3},
+		[]any{int64(11), int64(4), int64(9)},
+		[]any{22.4, int64(2), 1.3},
 	},
 	{
-		[]interface{}{int64(11), int64(5), int64(12)},
-		[]interface{}{true, false, 1.3},
+		[]any{int64(11), int64(5), int64(12)},
+		[]any{true, false, 1.3},
 	},
 	{
-		[]interface{}{int64(9), int64(15), int64(122)},
-		[]interface{}{1.3, int64(40), false},
+		[]any{int64(9), int64(15), int64(122)},
+		[]any{1.3, int64(40), false},
 	},
 	{
-		[]interface{}{int64(5), int64(7), int64(32)},
-		[]interface{}{24.8, int64(4), int64(40)},
+		[]any{int64(5), int64(7), int64(32)},
+		[]any{24.8, int64(4), int64(40)},
 	},
 }
 
@@ -91,7 +90,7 @@ func TestCookProgram(t *testing.T) {
 	p := parser.NewParser()
 	cook, err := p.Parse("testdata/Cookfile")
 	require.NoError(t, err)
-	args := make(map[string]interface{})
+	args := make(map[string]any)
 	args["TEST_NEST_LOOP"] = false
 	for _, tc := range cases {
 		args[tc.vname] = tc.name
@@ -99,7 +98,7 @@ func TestCookProgram(t *testing.T) {
 	require.NoError(t, cook.Execute(args))
 	for i, tc := range cases {
 		t.Logf("TestCookProgram case #%d", i+1)
-		bo, err := ioutil.ReadFile(tc.name)
+		bo, err := os.ReadFile(tc.name)
 		assert.NoError(t, err)
 		assert.Equal(t, tc.output, string(bo))
 	}
@@ -112,14 +111,14 @@ func TestCookProgram(t *testing.T) {
 		args["LISTA"] = tc[1]
 		args["FILE1"] = nestedResult
 		require.NoError(t, cook.ExecuteWithTarget(args, "sampleNestLoop"))
-		bo, err := ioutil.ReadFile(nestedResult)
+		bo, err := os.ReadFile(nestedResult)
 		require.NoError(t, err)
-		expectResult := resultNestLoop(tc[0].([]interface{}), tc[1].([]interface{}))
+		expectResult := resultNestLoop(tc[0].([]any), tc[1].([]any))
 		require.Equal(t, expectResult, string(bo))
 	}
 }
 
-func resultNestLoop(LIST, LISTA []interface{}) string {
+func resultNestLoop(LIST, LISTA []any) string {
 	a11 := 0
 	b22 := 0
 out1:
@@ -183,9 +182,9 @@ all:
 		verifier: func(t *testing.T, scope ast.Scope) {
 			v, vk, _ := scope.GetVariable("V")
 			require.Equal(t, reflect.Slice, vk)
-			assert.Equal(t, []interface{}{
-				[]interface{}{int64(1), int64(2), "text"},
-				[]interface{}{int64(3), int64(4), "text"},
+			assert.Equal(t, []any{
+				[]any{int64(1), int64(2), "text"},
+				[]any{int64(3), int64(4), "text"},
 			}, v)
 		},
 	},
